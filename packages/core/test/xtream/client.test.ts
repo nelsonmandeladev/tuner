@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { HttpError } from "../../src/adapters";
 import { XtreamClient } from "../../src/xtream/client";
 import { XtreamError } from "../../src/xtream/errors";
-import { apiUrl, normalizeServer, streamUrl } from "../../src/xtream/urls";
+import { redact } from "../../src/redact";
+import {
+  apiUrl,
+  normalizeServer,
+  streamUrl,
+  timeshiftMinutes,
+  timeshiftStart,
+  timeshiftUrl,
+} from "../../src/xtream/urls";
 import { creds, fakeHttp, fixture } from "../helpers";
 
 const account = fixture<Record<string, Record<string, unknown>>>("account-info.json");
@@ -144,5 +152,29 @@ describe("urls", () => {
       "http://provider.example:8080/live/alice/s3cret%2F%23%3F/4521.ts",
     );
     expect(() => streamUrl(creds, "movie", 1, "../ts")).toThrow();
+  });
+
+  it("formats catch-up start times on the server's clock", () => {
+    // 2026-10-11 19:22 UTC: Paris is UTC+2 in summer time, UTC+1 after 25 October.
+    expect(timeshiftStart(Date.UTC(2026, 9, 11, 19, 22), "Europe/Paris")).toBe("2026-10-11:21-22");
+    expect(timeshiftStart(Date.UTC(2026, 10, 2, 23, 5), "Europe/Paris")).toBe("2026-11-03:00-05");
+    expect(timeshiftStart(Date.UTC(2026, 9, 11, 19, 22), null)).toBe("2026-10-11:19-22");
+    expect(timeshiftStart(Date.UTC(2026, 9, 11, 19, 22), "Not/AZone")).toBe("2026-10-11:19-22");
+    expect(timeshiftMinutes(0, 90 * 60_000 + 1)).toBe(91);
+  });
+
+  it("builds both catch-up URL forms, and redact() masks both", () => {
+    const path = timeshiftUrl(creds, 4521, "2026-10-11:21-10", 60, "path");
+    expect(path).toBe(
+      "http://provider.example:8080/timeshift/alice/s3cret%2F%23%3F/60/2026-10-11:21-10/4521.ts",
+    );
+    const query = timeshiftUrl(creds, 4521, "2026-10-11:21-10", 60, "query");
+    expect(new URL(query).pathname).toBe("/streaming/timeshift.php");
+    for (const url of [path, query]) {
+      const masked = redact(url);
+      expect(masked).not.toContain("alice");
+      expect(masked).not.toContain("s3cret");
+    }
+    expect(() => timeshiftUrl(creds, 1, "../x", 60, "path")).toThrow();
   });
 });
