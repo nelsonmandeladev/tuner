@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Connect</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&amp;family=Inter:wght@400;500;600&amp;family=Geist+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0;background:#0A0B0C}
+a{color:#F2A93B;text-decoration:none}a:hover{color:#FFD08A}
+button,input{font:inherit}
+input::placeholder{color:#6E7471}
+input:focus{outline:2px solid #F2A93B;outline-offset:1px}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; background: #0A0B0C; color: #F1F3F2; font-family: Inter, system-ui, sans-serif; display: flex; flex-wrap: wrap; box-sizing: border-box;">
+
+  <section style="flex: 1 1 480px; min-width: 0; position: relative; overflow: hidden; box-sizing: border-box; padding: 48px 64px; display: flex; flex-direction: column; justify-content: space-between; gap: 48px; background: #101418;">
+    <div style="position: absolute; width: 760px; height: 760px; border-radius: 50%; right: -320px; bottom: -300px; background: #17222B;"></div>
+    <div style="position: absolute; width: 420px; height: 420px; border-radius: 50%; right: -80px; bottom: -120px; background: #1D2C37;"></div>
+    <div style="position: absolute; width: 120px; height: 120px; border-radius: 50%; right: 210px; bottom: 300px; background: #F2A93B;"></div>
+    <div style="position: relative; display: flex; align-items: center; gap: 10px;">
+      <svg width="26" height="22" viewBox="0 0 26 22" aria-hidden="true"><rect x="0" y="8" width="6" height="14" rx="3" fill="#F1F3F2"></rect><rect x="10" y="4" width="6" height="18" rx="3" fill="#F1F3F2"></rect><rect x="20" y="0" width="6" height="22" rx="3" fill="#F2A93B"></rect></svg>
+      <span style="font-family: Montserrat, sans-serif; font-weight: 800; font-size: 21px; letter-spacing: -0.03em;">Tuner</span>
+    </div>
+    <div style="position: relative; display: flex; flex-direction: column; gap: 20px; max-width: 520px;">
+      <h1 style="margin: 0; font-family: Montserrat, sans-serif; font-weight: 800; font-size: 64px; line-height: 0.98; letter-spacing: -0.045em; text-wrap: balance;">Your subscription. A player that keeps up.</h1>
+      <p style="margin: 0; font-size: 17px; line-height: 1.55; color: #B4BAB7; max-width: 440px;">Sign in once with the details your provider gave you. Live TV, movies and series load in seconds after that.</p>
+    </div>
+    <p style="position: relative; margin: 0; font-size: 13px; line-height: 1.5; color: #8A908D; max-width: 420px;">Tuner includes no channels. It plays the subscription you already have.</p>
+  </section>
+
+  <section style="flex: 1 1 480px; min-width: 0; box-sizing: border-box; padding: 48px 32px; display: flex; align-items: center; justify-content: center;">
+    <form style="width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <h2 style="margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.02em;">Connect your subscription</h2>
+        <p style="margin: 0; font-size: 15px; color: #9AA09D;">Use your Xtream Codes login.</p>
+      </div>
+
+      <div style="display: flex; padding: 4px; gap: 4px; border-radius: 14px; background: #121417; border: 1px solid #1C1F23;">
+        <button type="button" style="flex: 1; height: 40px; border: 0; border-radius: 10px; background: #22262B; color: #F1F3F2; font-size: 14px; font-weight: 600;">Xtream Codes</button>
+        <button type="button" disabled style="flex: 1; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #7C827F; font-size: 14px; font-weight: 500;">M3U playlist · later</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label for="server" style="font-size: 13px; font-weight: 600; color: #C6CBC8;">Server URL</label>
+          <input id="server" type="url" value="http://line.example-provider.tv:8080" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2E33; background: #121417; color: #F1F3F2; font-size: 15px; font-family: 'Geist Mono', monospace;">
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+            <label for="username" style="font-size: 13px; font-weight: 600; color: #C6CBC8;">Username</label>
+            <input id="username" type="text" value="measdev" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2E33; background: #121417; color: #F1F3F2; font-size: 15px; min-width: 0;">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+            <label for="password" style="font-size: 13px; font-weight: 600; color: #C6CBC8;">Password</label>
+            <input id="password" type="password" value="xxxxxxxxxx" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2E33; background: #121417; color: #F1F3F2; font-size: 15px; min-width: 0;">
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label for="nickname" style="font-size: 13px; font-weight: 600; color: #C6CBC8;">Name this subscription <span style="font-weight: 400; color: #8A908D;">(optional)</span></label>
+          <input id="nickname" type="text" placeholder="Main subscription" style="height: 48px; box-sizing: border-box; padding: 0 16px; border-radius: 12px; border: 1px solid #2A2E33; background: #121417; color: #F1F3F2; font-size: 15px;">
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 14px; background: #F2A93B; color: #1A1204; font-size: 16px; font-weight: 600;">Connect</a>
+        <p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #8A908D;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>Your password stays in this computer’s keychain.</p>
+      </div>
+    </form>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
