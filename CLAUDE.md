@@ -51,6 +51,7 @@ Run from the repo root. Keep this list current.
 | `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
 | `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
 | `TUNER_M2_SUITE=1 pnpm dev` | Dev build that connects with the `.env.local` account through the real Connect code (unreachable server, connect, keychain, first sync, image cache) and prints `RESULT` lines. Run it on a fresh app-data folder to time a first sync |
+| `TUNER_M3_SUITE="live=<id>,archive=<id>" pnpm dev` | Dev build that runs the M3 Live TV and player checks by itself through the real screens (scroll fps on the full list, layout vs the mockup, mpv alignment, click/zap timings, frame hold, shortcuts, favorites, hide/unhide, EPG cache, catch-up) and prints `RESULT` lines. It checks `active_cons` before opening any stream. `live` is a channel to zap from, `archive` a channel with `tv_archive`; optional `zaps=6,firsts=5`. Ids come from your own library (never commit them) |
 | `node scripts/record-fixtures.mjs` | Re-record the Xtream fixtures in `packages/core/test/fixtures` from `.env.local` (credentials, host and content names are stripped) |
 | `TUNER_M1_SUITE="live=<id>,hevc=<id>,ac3=<id>.<ext>,eac3=<id>.<ext>" pnpm dev` | Dev build that opens `/debug/player` and runs the M1 playback suite by itself; results print as `[player] RESULT …` lines. Ids come from your own account (never commit them) |
 
@@ -78,5 +79,5 @@ Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter 
 - ~~Primary OS for M1 and v1 first release~~ **Answered 2026-10-11: Windows.** macOS later.
 - Final app name and icon.
 - ~~Live TV preview behaviour~~ **Answered 2026-10-11: auto-play muted on selection.**
-- Does the provider support catch-up (`tv_archive`)? Check during M2 with real data. *Seen in M1 (2026-10-11): 402 of 21,791 live channels have `tv_archive` on; catch-up playback still untested.*
+- ~~Does the provider support catch-up (`tv_archive`)?~~ **Yes, checked in M3 (2026-10-11):** 400 channels have it (2–3 days), the `/timeshift/` path form plays (start time on the server clock). Implemented in M3.
 - Auto-update in v1 or manual installs? Default until answered: manual.

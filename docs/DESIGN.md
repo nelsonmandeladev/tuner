@@ -36,7 +36,14 @@ Put these in `apps/desktop/src/styles/tokens.css` as CSS custom properties. Comp
 | `--art-panel` | `#101418` | Connect screen art panel (from `Connect.dc.html`, added in M2) |
 | `--art-shape-1` / `--art-shape-2` | `#17222B` / `#1D2C37` | The panel's two large circles |
 | `--text-soft` | `#B4BAB7` | Intro copy on the art panel |
-| `--text-faint` | `#8A908D` | Small print: "includes no channels", the keychain note, "(optional)" |
+| `--text-faint` | `#8A908D` | Small print: "includes no channels", the keychain note, "(optional)"; category heading, list progress fill, preview times (M3) |
+| `--line-outline` | `#2E3338` | Selected channel row ring, Catch-up badge (from `LiveTV.dc.html`, added in M3) |
+| `--overlay-preview` | `rgba(10,11,12,0.7)` | LIVE and "Preview · muted" chips on the preview |
+| `--ghost-strong` | `rgba(241,243,242,0.12)` | Back button on video |
+| `--line-on-media` | `rgba(241,243,242,0.3)` | Key hints on video |
+| `--art-glow` / `--art-shade` | `rgba(241,243,242,0.08)` / `rgba(10,11,12,0.25)` | The two circles of generated art |
+| `--scrim-player` | gradient, `Player.dc.html` | Top and bottom scrim of the player overlay |
+| `--art-0…7-tint/shape` | the hash palette below | Generated art and monogram tiles |
 
 Light theme: not designed yet. In M6, derive light tokens with the same roles, keep the accent, darken it for text if contrast fails, and ask the user to review.
 
@@ -99,6 +106,18 @@ Provider artwork is often missing or broken. Never show a broken image or an emp
 - **Posters and backdrops:** real `stream_icon` / `cover` / `backdrop_path` through the image cache. If missing or failing, show **generated art**: a dark tint and one or two large soft circles, positioned and coloured from a hash of the title, with the title set in Montserrat 800 at the bottom-left. This is exactly what the mockups show, so the fallback is already designed.
 - **Channel logos:** real logo on a `--surface` tile with 6 px inner padding, `object-fit: contain`. Fallback: monogram (up to 3 letters from the name) in Montserrat 800 on a tint from the same hash palette.
 - Hash palette (tint, shape): `#1F3B57/#2E5578`, `#4A2A2A/#6B3B3B`, `#2A3550/#3D4C72`, `#1E4234/#2C5E4A`, `#3A2C4E/#54406F`, `#33230F/#7A5420`, `#18282A/#2E5552`, `#1E2414/#3E5126`.
+
+### Live TV and player: what the mockups do not show (M3)
+
+Built in the mockups' language; review these:
+
+- **Hide a category:** an eye button appears over the count on hover or focus. Hidden categories collect under a "Hidden (n)" disclosure at the end of the list, with a button to show each again.
+- **Catch-up:** channels with an archive get "Up next | Catch-up" tabs in the preview; Catch-up lists recordings by day. The player shows a "Catch-up" chip instead of LIVE, a seekable bar (position / programme length), ±10 s buttons and "Back to live" instead of Guide.
+- **Guide (G):** a panel on the right with the zap list and what is on; replaces the switcher while open.
+- **Stream info (I):** a mono panel top-left (codec, size, decoder, bitrates, dropped frames, buffer).
+- **Number entry:** a "Channel 12_" chip top-right while digits are typed.
+- **Errors:** a card over the last frame (player) or a bar on the preview, with "Try again"; a specific message when every connection of the subscription is in use.
+- **Mismatches:** the mockup's filter field is 44 high (DESIGN says inputs are 48): built at 44. Scrollbars are thin and in `--line-strong` (the mockup shows none). Channel numbers on the test provider run to 7 digits, so the number column sizes to the longest number in the list instead of 32 px.
 
 ## Motion
 
