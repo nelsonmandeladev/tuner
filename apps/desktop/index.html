@@ -4,11 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tuner</title>
-    <!-- Painted before any CSS loads, so there is never a white frame. Same value as --bg. -->
+    <!--
+      Transparent: mpv draws under the webview (docs/DECISIONS.md D2). There is no white
+      frame because the window stays hidden until React's first paint (main.tsx), and the
+      app shell paints --bg itself.
+    -->
     <style>
       html,
       body {
-        background: #0a0b0c;
+        background: transparent;
       }
     </style>
   </head>

@@ -8,9 +8,18 @@
     height: 100%;
   }
 
+  /*
+   * Transparent so mpv, which draws under the webview, can show through
+   * (docs/DECISIONS.md D2). Screens paint their own background: AppShell is
+   * opaque --bg, the player leaves a hole where the video goes.
+   */
+  html,
+  body {
+    background: transparent;
+  }
+
   body {
     margin: 0;
-    background: var(--bg);
     color: var(--text);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;

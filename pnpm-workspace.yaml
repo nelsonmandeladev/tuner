@@ -1,3 +1,9 @@
 packages:
   - apps/*
   - packages/*
+
+overrides:
+  # tauri-plugin-libmpv-api pins @tauri-apps/api to an exact older 2.x. Resolve it to the
+  # app's own copy so there is one Tauri JS runtime (one event system) in the bundle.
+  # Keep this range in step with apps/desktop/package.json.
+  "tauri-plugin-libmpv-api>@tauri-apps/api": "^2.12.2"
