@@ -1,6 +1,7 @@
 mod db;
 #[cfg(debug_assertions)]
 mod debug_stream;
+mod secrets;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -14,13 +15,19 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db::db_batch,
+        secrets::secret_get,
+        secrets::secret_set,
+        secrets::secret_delete,
         debug_stream::debug_stream_load,
         debug_stream::debug_trace,
         debug_stream::debug_autorun
     ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
-        db::db_batch
+        db::db_batch,
+        secrets::secret_get,
+        secrets::secret_set,
+        secrets::secret_delete
     ]);
 
     builder
