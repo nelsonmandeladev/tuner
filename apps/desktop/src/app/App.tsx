@@ -1,4 +1,5 @@
 import { MotionConfig } from "motion/react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Home } from "../screens/Home";
 import { LiveTV } from "../screens/LiveTV";
@@ -7,6 +8,9 @@ import { Search } from "../screens/Search";
 import { Series } from "../screens/Series";
 import { Settings } from "../screens/Settings";
 import { AppShell } from "./AppShell";
+
+// Dev builds only: import.meta.env.DEV is false in release, so the bundler drops the import.
+const PlayerDebug = import.meta.env.DEV ? lazy(() => import("../screens/debug/PlayerDebug")) : null;
 
 export function App() {
   return (
@@ -22,6 +26,18 @@ export function App() {
             <Route path="search" element={<Search />} />
             <Route path="settings" element={<Settings />} />
           </Route>
+          {PlayerDebug && (
+            <Route
+              path="debug/player"
+              element={
+                // The window is transparent (mpv draws under it): a frame that paints
+                // nothing shows the desktop, so the fallback paints the app background.
+                <Suspense fallback={<div className="h-full bg-bg" />}>
+                  <PlayerDebug />
+                </Suspense>
+              }
+            />
+          )}
         </Routes>
       </BrowserRouter>
     </MotionConfig>

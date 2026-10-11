@@ -12,6 +12,10 @@ export function useGlobalShortcuts() {
         event.preventDefault();
         // M5 turns this into the search overlay; until then it opens the Search screen.
         void navigate("/search");
+      } else if (import.meta.env.DEV && hasModKey(event) && event.shiftKey && event.key === "D") {
+        // Dev only: the M1 player debug screen, which is not in the sidebar.
+        event.preventDefault();
+        void navigate("/debug/player");
       }
     }
     window.addEventListener("keydown", onKeyDown);
