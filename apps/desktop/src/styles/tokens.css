@@ -1,0 +1,135 @@
+/*
+ * Design tokens from docs/DESIGN.md.
+ *
+ * The raw tokens live on :root under the names DESIGN.md uses, so a light theme
+ * (M6) only has to redefine them. The @theme block maps them onto Tailwind's
+ * namespaces. Tailwind's default colours, font sizes and radii are cleared, so a
+ * class that is not a design token does not compile into anything.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Colour (dark, the default theme) */
+  --bg: #0a0b0c;
+  --bg-sidebar: #0d0f11;
+  --surface: #121417;
+  --surface-selected: #171a1e;
+  --surface-active: #1a1d21;
+  --surface-raised: #22262b;
+  --line: #1c1f23;
+  --line-strong: #2a2e33;
+  --text: #f1f3f2;
+  --text-2: #c6cbc8;
+  --text-muted: #9aa09d;
+  --text-dim: #7c827f;
+  --text-placeholder: #6e7471;
+  --accent: #f2a93b;
+  --accent-hover: #ffd08a;
+  --on-accent: #1a1204;
+  --live: #f0503c;
+  --overlay: rgba(5, 6, 6, 0.6);
+  --overlay-strong: rgba(5, 6, 6, 0.82);
+  --ghost: rgba(241, 243, 242, 0.1);
+  --track: #23272b;
+  --track-on-media: rgba(241, 243, 242, 0.18);
+  --avatar: #2a2418;
+
+  /* Motion */
+  --ease-in-panel: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-hover: 120ms;
+  --duration-in: 200ms;
+  --duration-out: 150ms;
+}
+
+@theme {
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+
+  --font-display: "Montserrat", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Type scale: size / line-height / weight / tracking per DESIGN.md */
+  --text-display-xl: 72px;
+  --text-display-xl--line-height: 0.96;
+  --text-display-xl--font-weight: 800;
+  --text-display-xl--letter-spacing: -0.05em;
+  --text-display-l: 60px;
+  --text-display-l--line-height: 0.98;
+  --text-display-l--font-weight: 800;
+  --text-display-l--letter-spacing: -0.045em;
+  --text-display-m: 44px;
+  --text-display-m--line-height: 1;
+  --text-display-m--font-weight: 800;
+  --text-display-m--letter-spacing: -0.04em;
+  --text-title: 26px;
+  --text-title--line-height: 1.2;
+  --text-title--font-weight: 600;
+  --text-title--letter-spacing: -0.02em;
+  --text-heading: 20px;
+  --text-heading--line-height: 1.3;
+  --text-heading--font-weight: 600;
+  --text-heading--letter-spacing: -0.01em;
+  --text-body-l: 16px;
+  --text-body-l--line-height: 1.55;
+  --text-body: 15px;
+  --text-body--line-height: 1.45;
+  --text-small: 14px;
+  --text-small--line-height: 1.4;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.4;
+  --text-eyebrow: 13px;
+  --text-eyebrow--line-height: 1.4;
+  --text-eyebrow--font-weight: 600;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-mono: 12px;
+  --text-mono--line-height: 1.4;
+  /* Brand wordmark in the sidebar (Montserrat 800, 21 px in Main.dc.html) */
+  --text-wordmark: 21px;
+  --text-wordmark--line-height: 1;
+  --text-wordmark--font-weight: 800;
+  --text-wordmark--letter-spacing: -0.03em;
+
+  /* Radius by role (DESIGN.md "Radius") */
+  --radius-kbd: 6px;
+  --radius-chip: 8px;
+  --radius-control: 10px;
+  --radius-field: 12px;
+  --radius-button: 14px;
+  --radius-poster: 16px;
+  --radius-card: 18px;
+  --radius-hero: 24px;
+  --radius-full: 9999px;
+
+  --ease-panel: var(--ease-in-panel);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-surface: var(--surface);
+  --color-surface-selected: var(--surface-selected);
+  --color-surface-active: var(--surface-active);
+  --color-surface-raised: var(--surface-raised);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-live: var(--live);
+  --color-overlay: var(--overlay);
+  --color-overlay-strong: var(--overlay-strong);
+  --color-ghost: var(--ghost);
+  --color-track: var(--track);
+  --color-track-on-media: var(--track-on-media);
+  --color-avatar: var(--avatar);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+}
