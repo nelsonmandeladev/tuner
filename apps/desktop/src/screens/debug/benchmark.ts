@@ -53,13 +53,23 @@ export async function measureFirstFrame(source: PlayerSource, runs: number, sign
   }
 }
 
-/** Zaps through `sources` in order; the first open is a warm-up and not counted as a zap. */
+/**
+ * Zaps through `sources` in order (from a stopped player the first open is
+ * timed as a first frame). A zap that fails or times out is reported and the
+ * run goes on: providers start idle channels on demand, which can take ~16 s.
+ */
 export async function measureZap(sources: PlayerSource[], signal: AbortSignal) {
+  const failures: string[] = [];
   for (const source of sources) {
-    if (signal.aborted) return;
-    await timedOpen(source);
+    if (signal.aborted) break;
+    try {
+      await timedOpen(source);
+    } catch (error) {
+      failures.push(`${source.label}: ${String(error)}`);
+    }
     await sleep(DWELL_MS);
   }
+  return failures;
 }
 
 export function summarize(timings: LoadTiming[], kind: LoadTiming["kind"]) {

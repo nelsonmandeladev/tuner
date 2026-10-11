@@ -37,8 +37,25 @@ import {
 
 type Layout = "preview" | "full";
 
-/** The suite runs once per app start, even across StrictMode remounts. */
-let suiteStarted = false;
+/**
+ * The suite runs once per app start, even across StrictMode remounts and hot
+ * reloads (which reset module state). sessionStorage lives as long as the window.
+ */
+const SUITE_KEY = "tuner.m1SuiteStarted";
+function suiteStarted() {
+  try {
+    return sessionStorage.getItem(SUITE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSuiteStarted() {
+  try {
+    sessionStorage.setItem(SUITE_KEY, "1");
+  } catch {
+    // Without storage a hot reload may run the suite again; dev only.
+  }
+}
 
 export default function PlayerDebug() {
   const [pick, setPick] = useState<DebugPick>({ kind: "live", id: 0, ext: "ts" });
@@ -65,7 +82,7 @@ export default function PlayerDebug() {
   useEffect(() => {
     let cancelled = false;
     void devAutorunPlan().then((value) => {
-      if (cancelled || !value || suiteStarted) return;
+      if (cancelled || !value || suiteStarted()) return;
       const plan = parsePlan(value);
       if (!plan) {
         debugTrace(
@@ -73,7 +90,7 @@ export default function PlayerDebug() {
         );
         return;
       }
-      suiteStarted = true;
+      markSuiteStarted();
       setBusy("suite");
       void runM1Suite(plan, { setLayout }, debugTrace).finally(() => setBusy(null));
     });
@@ -214,14 +231,15 @@ export default function PlayerDebug() {
               <Button
                 disabled={!!busy || pick.id <= 0}
                 onClick={() =>
-                  void run("zap", (s) =>
-                    measureZap(
+                  void run("zap", async (s) => {
+                    const failures = await measureZap(
                       Array.from({ length: runs + 1 }, (_, i) =>
                         debugSource({ ...pick, id: pick.id + i }),
                       ),
                       s,
-                    ),
-                  )
+                    );
+                    for (const failure of failures) debugTrace(`zap failed: ${failure}`);
+                  })
                 }
               >
                 Zap id…id+{runs}

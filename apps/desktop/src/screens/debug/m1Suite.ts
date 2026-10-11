@@ -89,70 +89,89 @@ export async function runM1Suite(plan: SuitePlan, controls: SuiteControls, log: 
   const step = (name: string) => log(`${clock()} STEP ${name}`);
   const abort = new AbortController();
 
+  /** Runs one step; an error fails that step and the suite moves on. */
+  const guarded = async (name: string, run: () => Promise<void>) => {
+    step(name);
+    try {
+      await run();
+    } catch (error) {
+      check(name, false, `step error: ${String(error)}`);
+    }
+  };
+
   try {
-    step(`first frame x5, live ${plan.live}.ts`);
-    await measureFirstFrame(live(plan.live), 5, abort.signal);
-    const first = summarize(state().timings, "first");
-    check("first-frame", !!first && first.median < 1500, JSON.stringify(first));
+    await guarded(`first frame x5, live ${plan.live}.ts`, async () => {
+      await measureFirstFrame(live(plan.live), 5, abort.signal);
+      const first = summarize(state().timings, "first");
+      check("first-frame", !!first && first.median < 1500, JSON.stringify(first));
+    });
 
-    step(`zap x5, live ${plan.live}..${plan.live + 5}.ts`);
-    await measureZap(
-      Array.from({ length: 6 }, (_, i) => live(plan.live + i)),
-      abort.signal,
-    );
-    const zap = summarize(state().timings, "zap");
-    check("zap", !!zap && zap.median < 1000, JSON.stringify(zap));
+    await guarded(`zap x5, live ${plan.live}..${plan.live + 5}.ts`, async () => {
+      const failures = await measureZap(
+        Array.from({ length: 6 }, (_, i) => live(plan.live + i)),
+        abort.signal,
+      );
+      const zap = summarize(state().timings, "zap");
+      check(
+        "zap",
+        !!zap && zap.median < 1000 && failures.length === 0,
+        `${JSON.stringify(zap)} failed: [${failures.join("; ")}]`,
+      );
+    });
 
-    step("layout, full screen and resize keep one load and stay aligned");
-    await open(live(plan.live));
-    await waitFor((s) => s.status === "playing", 15_000);
-    await layoutChecks(controls, check, log);
+    await guarded("layout, full screen and resize keep one load and stay aligned", async () => {
+      await open(live(plan.live));
+      await waitFor((s) => s.status === "playing", 20_000);
+      await layoutChecks(controls, check, log);
+    });
 
-    step(`HEVC live ${plan.liveHevc}.ts`);
-    await open(live(plan.liveHevc));
-    const hevcUp = await waitFor((s) => s.status === "playing", 15_000);
-    await sleep(3000);
-    check("hevc-live", hevcUp && state().video.codec === "hevc", describe());
+    await guarded(`HEVC live ${plan.liveHevc}.ts`, async () => {
+      await open(live(plan.liveHevc));
+      const hevcUp = await waitFor((s) => s.status === "playing", 20_000);
+      await sleep(3000);
+      check("hevc-live", hevcUp && state().video.codec === "hevc", describe());
+    });
 
     for (const [name, [id, ext]] of [
       ["vod-ac3", plan.vodAc3],
       ["vod-eac3", plan.vodEac3],
     ] as const) {
-      step(`${name}: movie ${id}.${ext}`);
-      await vodChecks(name, source({ kind: "movie", id, ext }), check);
+      await guarded(`${name}: movie ${id}.${ext}`, () =>
+        vodChecks(name, source({ kind: "movie", id, ext }), check),
+      );
     }
 
-    step("reconnect after a drop (simulated) on live");
-    await open(live(plan.live));
-    await waitFor((s) => s.status === "playing", 15_000);
-    const loadsBefore = state().loads;
-    const t0 = performance.now();
-    simulateDrop();
-    const sawToast = await waitFor((s) => s.status === "reconnecting", 2000);
-    const back = await waitFor((s) => s.status === "playing", 20_000);
-    check(
-      "reconnect-recovers",
-      sawToast && back,
-      `back in ${Math.round(performance.now() - t0)} ms, loads +${state().loads - loadsBefore}`,
-    );
-
-    step("reconnect gives up after 3 tries (stream id that does not exist)");
-    const attempts: string[] = [];
-    const t1 = performance.now();
-    const unsubscribe = usePlayer.subscribe((s, prev) => {
-      if (s.reconnectAttempt !== prev.reconnectAttempt && s.reconnectAttempt > 0)
-        attempts.push(`#${s.reconnectAttempt}@${Math.round(performance.now() - t1)}ms`);
+    await guarded("reconnect after a drop (simulated) on live", async () => {
+      await open(live(plan.live));
+      await waitFor((s) => s.status === "playing", 20_000);
+      const loadsBefore = state().loads;
+      const t0 = performance.now();
+      simulateDrop();
+      const sawToast = await waitFor((s) => s.status === "reconnecting", 2000);
+      const back = await waitFor((s) => s.status === "playing", 20_000);
+      check(
+        "reconnect-recovers",
+        sawToast && back,
+        `back in ${Math.round(performance.now() - t0)} ms, loads +${state().loads - loadsBefore}`,
+      );
     });
-    await open(live(1));
-    const gaveUp = await waitFor((s) => s.status === "error", 40_000);
-    unsubscribe();
-    check(
-      "reconnect-gives-up",
-      gaveUp && attempts.length === 3,
-      `${attempts.join(" ")} then "${state().error}" at ${Math.round(performance.now() - t1)} ms`,
-    );
-  } catch (error) {
-    log(`${clock()} SUITE ERROR ${String(error)}`);
+
+    await guarded("reconnect gives up after 3 tries (stream id that does not exist)", async () => {
+      const attempts: string[] = [];
+      const t1 = performance.now();
+      const unsubscribe = usePlayer.subscribe((s, prev) => {
+        if (s.reconnectAttempt !== prev.reconnectAttempt && s.reconnectAttempt > 0)
+          attempts.push(`#${s.reconnectAttempt}@${Math.round(performance.now() - t1)}ms`);
+      });
+      await open(live(1));
+      const gaveUp = await waitFor((s) => s.status === "error", 40_000);
+      unsubscribe();
+      check(
+        "reconnect-gives-up",
+        gaveUp && attempts.length === 3,
+        `${attempts.join(" ")} then "${state().error}" at ${Math.round(performance.now() - t1)} ms`,
+      );
+    });
   } finally {
     await stop();
     controls.setLayout("preview");
