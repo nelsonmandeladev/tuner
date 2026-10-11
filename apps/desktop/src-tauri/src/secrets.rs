@@ -17,6 +17,18 @@ fn entry<R: Runtime>(app: &AppHandle<R>, key: &str) -> Result<Entry, String> {
     Entry::new(&app.config().identifier, key).map_err(|e| e.to_string())
 }
 
+/// An account's password, for Rust code that builds stream URLs (`streams.rs`).
+pub(crate) fn account_password<R: Runtime>(
+    app: &AppHandle<R>,
+    account_id: &str,
+) -> Result<Option<String>, String> {
+    match entry(app, &format!("xtream:{account_id}"))?.get_password() {
+        Ok(password) => Ok(Some(password)),
+        Err(Error::NoEntry) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[tauri::command]
 pub fn secret_get<R: Runtime>(app: AppHandle<R>, key: String) -> Result<Option<String>, String> {
     match entry(&app, &key)?.get_password() {

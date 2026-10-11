@@ -3,6 +3,7 @@ mod db;
 mod debug_stream;
 mod images;
 mod secrets;
+mod streams;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,17 +21,20 @@ pub fn run() {
         secrets::secret_get,
         secrets::secret_set,
         secrets::secret_delete,
+        streams::stream_load,
         debug_stream::debug_stream_load,
         debug_stream::debug_trace,
         debug_stream::debug_autorun,
-        debug_stream::debug_m2_credentials
+        debug_stream::debug_m2_credentials,
+        debug_stream::debug_m3_suite
     ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db::db_batch,
         secrets::secret_get,
         secrets::secret_set,
-        secrets::secret_delete
+        secrets::secret_delete,
+        streams::stream_load
     ]);
 
     builder

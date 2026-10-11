@@ -14,6 +14,8 @@ use serde::Deserialize;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_libmpv::MpvExt;
 
+use crate::streams::encode_segment;
+
 /// The window that hosts the mpv instance (the only window).
 const WINDOW: &str = "main";
 
@@ -79,20 +81,6 @@ impl Account {
             acc.replace(secret.as_str(), "***")
         })
     }
-}
-
-/// Percent-encodes everything outside the RFC 3986 unreserved set, so a
-/// password with `/`, `?` or `#` cannot change the shape of the path.
-fn encode_segment(segment: &str) -> String {
-    segment
-        .bytes()
-        .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
-                (b as char).to_string()
-            }
-            _ => format!("%{b:02X}"),
-        })
-        .collect()
 }
 
 #[derive(Deserialize, Clone, Copy)]
@@ -183,4 +171,14 @@ pub fn debug_m2_credentials() -> Result<Option<DevCredentials>, String> {
         username: account.username,
         password: account.password,
     }))
+}
+
+/// The M3 suite plan when the app was started with `TUNER_M3_SUITE`, e.g.
+/// `live=1234,archive=1240`: stream ids from the synced library. The Live TV
+/// screen then runs the suite by itself (see `screens/debug/m3Suite.ts`).
+#[tauri::command]
+pub fn debug_m3_suite() -> Option<String> {
+    std::env::var("TUNER_M3_SUITE")
+        .ok()
+        .filter(|v| !v.is_empty())
 }
