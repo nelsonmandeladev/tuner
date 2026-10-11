@@ -7,8 +7,9 @@
  */
 
 import { secretKey } from "@tuner/core";
+import { artworkUrl } from "../../data/artwork";
 import { keychain } from "../../data/secrets";
-import { connect, syncActive, useSession } from "../../data/session";
+import { connect, sampleLiveIcons, syncActive, useSession } from "../../data/session";
 
 export interface DevCredentials {
   server: string;
@@ -68,10 +69,36 @@ export async function runM2Suite(creds: DevCredentials, log: Log, goHome: () => 
       !sync.error && Object.values(sync.steps).every((s) => s.status === "done"),
       `${steps.join(" ")}; live usable after ${Math.round(liveAt ?? -1)} ms, all done in ${Math.round(performance.now() - t2)} ms; stored ${JSON.stringify(counts)}`,
     );
+    // Image cache (D7): load a few real channel logos through the img protocol,
+    // twice. The second pass is served from disk.
+    const icons = (await sampleLiveIcons(40)).slice(0, 8);
+    const pass = async () => {
+      const t = performance.now();
+      const loaded = await Promise.all(icons.map((icon) => loadImage(artworkUrl(icon))));
+      return { ok: loaded.filter(Boolean).length, ms: Math.round(performance.now() - t) };
+    };
+    const first = await pass();
+    const second = await pass();
+    check(
+      "image-cache",
+      first.ok > 0 && second.ok === first.ok,
+      `${first.ok}/${icons.length} logos loaded in ${first.ms} ms, again in ${second.ms} ms`,
+    );
     goHome();
   } catch (error) {
     log(`${clock()} SUITE ERROR ${String(error)}`);
   } finally {
     log(`${clock()} SUITE DONE ${JSON.stringify(results)}`);
   }
+}
+
+/** Resolves true when the image decodes; a fresh URL each time bypasses the webview's memory cache. */
+function loadImage(src: string | null): Promise<boolean> {
+  if (!src) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image.naturalWidth > 0);
+    image.onerror = () => resolve(false);
+    image.src = `${src}${src.includes("?") ? "&" : "?"}n=${Math.random()}`;
+  });
 }

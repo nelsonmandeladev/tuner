@@ -46,7 +46,7 @@ fn client() -> &'static reqwest::Client {
         reqwest::Client::builder()
             .user_agent(USER_AGENT)
             .connect_timeout(Duration::from_secs(8))
-            .timeout(Duration::from_secs(20))
+            .timeout(Duration::from_secs(10))
             .build()
             .expect("image HTTP client")
     })

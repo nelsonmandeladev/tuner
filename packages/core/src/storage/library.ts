@@ -157,6 +157,15 @@ export function recordSync(
   );
 }
 
+/** Up to `limit` distinct channel logo URLs, in list order. */
+export async function readLiveIcons(db: SqlAdapter, limit: number): Promise<string[]> {
+  const rows = await db.select<{ icon: string }>(
+    "SELECT icon FROM live WHERE icon IS NOT NULL GROUP BY icon ORDER BY MIN(position) LIMIT ?",
+    [limit],
+  );
+  return rows.map((r) => r.icon);
+}
+
 export interface ListSyncState {
   list: LibraryList;
   syncedAt: number;

@@ -18,6 +18,7 @@ import {
   migrate,
   normalizeServer,
   readCounts,
+  readLiveIcons,
   readSyncState,
   secretKey,
   setSetting,
@@ -108,6 +109,11 @@ async function refreshLibrary() {
   if (!libraryDb) return;
   const [counts, syncState] = await Promise.all([readCounts(libraryDb), readSyncState(libraryDb)]);
   set({ counts, syncState });
+}
+
+/** Dev checks only: channel logo URLs from the active library. */
+export async function sampleLiveIcons(limit: number): Promise<string[]> {
+  return libraryDb ? readLiveIcons(libraryDb, limit) : [];
 }
 
 /**
