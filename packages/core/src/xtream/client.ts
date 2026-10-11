@@ -221,6 +221,7 @@ function toXtreamError(error: unknown, creds: Credentials): XtreamError {
         // 401/403 with credentials in the URL means the login was refused.
         if (error.status === 401 || error.status === 403)
           return new XtreamError("wrong-credentials", message);
+        if (error.status === 429) return new XtreamError("rate-limited", message);
         if (error.status !== undefined && error.status >= 500)
           return new XtreamError("unreachable", message);
         return new XtreamError("bad-response", message);

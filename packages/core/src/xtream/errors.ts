@@ -9,6 +9,11 @@ export type XtreamErrorKind =
   | "wrong-credentials"
   /** Account status is not Active (Expired, Banned, Disabled…). `status` holds it. */
   | "inactive"
+  /**
+   * HTTP 429. Some providers answer a wrong password this way, others use it
+   * after repeated attempts: the user should check the login, then wait.
+   */
+  | "rate-limited"
   /** No answer: DNS, refused, timed out. */
   | "unreachable"
   /** An answer that is not the expected JSON (HTML error page, rate limit…). */

@@ -26,7 +26,7 @@ describe("account info", () => {
 
   it("maps auth 0 and empty answers to wrong credentials", async () => {
     const refused = { ...account, user_info: { ...account.user_info, auth: 0 } };
-    for (const body of [refused, [], {}]) {
+    for (const body of [refused, [], {}, null]) {
       const { http } = fakeHttp({ "": body });
       expect((await errorOf(new XtreamClient(http, creds).accountInfo())).kind).toBe(
         "wrong-credentials",
@@ -46,6 +46,7 @@ describe("account info", () => {
     ["timeout", undefined, "unreachable"],
     ["status", 503, "unreachable"],
     ["status", 403, "wrong-credentials"],
+    ["status", 429, "rate-limited"],
     ["status", 404, "bad-response"],
     ["not-json", undefined, "bad-response"],
   ] as const)("maps an HTTP %s error (%s) to %s", async (kind, status, expected) => {
