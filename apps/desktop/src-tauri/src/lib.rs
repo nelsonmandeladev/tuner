@@ -3,7 +3,10 @@ mod debug_stream;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default().plugin(tauri_plugin_libmpv::init());
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(tauri_plugin_libmpv::init());
 
     // The debug stream loader reads .env.local and exists in dev builds only.
     #[cfg(debug_assertions)]

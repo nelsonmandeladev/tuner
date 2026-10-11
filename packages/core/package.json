@@ -15,7 +15,11 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   }
 }
