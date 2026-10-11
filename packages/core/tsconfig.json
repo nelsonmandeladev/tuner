@@ -12,6 +12,8 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    // Node types for tests (fixtures, node:sqlite). ESLint keeps node:* out of src.
+    "types": ["node"],
     "noEmit": true
   },
   "include": ["src", "test"]

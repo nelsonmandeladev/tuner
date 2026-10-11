@@ -19,10 +19,15 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
-    // The core must stay portable (CLAUDE.md rule 7): no React, no Tauri.
+    // The core must stay portable (CLAUDE.md rule 7): no React, no Tauri, and no
+    // Node built-ins outside tests (a React Native build supplies its own adapters).
     files: ["packages/core/**/*.ts"],
+    ignores: ["packages/core/test/**"],
     rules: {
-      "no-restricted-imports": ["error", { patterns: ["react", "react-*", "@tauri-apps/*"] }],
+      "no-restricted-imports": [
+        "error",
+        { patterns: ["react", "react-*", "@tauri-apps/*", "node:*"] },
+      ],
     },
   },
   {
