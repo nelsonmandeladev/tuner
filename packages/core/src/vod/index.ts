@@ -14,5 +14,5 @@ export {
 export type { ResumePoint } from "./resume";
 export { sortIds } from "./sort";
 export type { GridSort, Sortable } from "./sort";
-export { splitTitleYear, yearOf } from "./title";
+export { episodeTitle, splitTitleYear, yearOf } from "./title";
 export type { TitleYear } from "./title";

@@ -24,7 +24,7 @@ import {
   type ResumePoint,
 } from "../../src/vod/resume";
 import { sortIds } from "../../src/vod/sort";
-import { splitTitleYear, yearOf } from "../../src/vod/title";
+import { episodeTitle, splitTitleYear, yearOf } from "../../src/vod/title";
 import { XtreamClient } from "../../src/xtream/client";
 import type { Episode } from "../../src/xtream/schemas";
 import { creds, fakeHttp, fixture } from "../helpers";
@@ -32,20 +32,42 @@ import { memoryDb } from "../sqlite";
 
 describe("splitTitleYear", () => {
   it.each([
-    ["Night Market - 2026", "Night Market", 2026],
-    ["Kribi (2024)", "Kribi", 2024],
-    ["Blade Runner 2049 - 2017", "Blade Runner 2049", 2017],
-    ["Blade Runner 2049", "Blade Runner 2049", null],
-    ["1917", "1917", null],
-    ["  Offside  ", "Offside", null],
-  ])("%s", (name, title, year) => {
-    expect(splitTitleYear(name)).toEqual({ title, year });
+    ["Night Market - 2026", "Night Market", 2026, []],
+    ["Kribi (2024)", "Kribi", 2024, []],
+    ["Blade Runner 2049 - 2017", "Blade Runner 2049", 2017, []],
+    ["Blade Runner 2049", "Blade Runner 2049", null, []],
+    ["1917", "1917", null, []],
+    ["  Offside  ", "Offside", null, []],
+    ["FR ★ Christy - 2025 [4K]", "Christy", 2025, ["4K"]],
+    ["|EN| The Long Harbour (2025) [MULTI] [HDR]", "The Long Harbour", 2025, ["MULTI", "HDR"]],
+    ["FR ❖ Les Frères Scott", "Les Frères Scott", null, []],
+    ["[4K]", "[4K]", null, []],
+  ])("%s", (name, title, year, tags) => {
+    expect(splitTitleYear(name)).toEqual({ title, year, tags });
   });
 
   it("reads a year from a release date", () => {
     expect(yearOf("2025-03-14")).toBe(2025);
     expect(yearOf("")).toBeNull();
     expect(yearOf(null)).toBeNull();
+  });
+});
+
+describe("episodeTitle", () => {
+  it.each([
+    ["FR ★ Les Frères Scott - S01E01 - Pilot", "Les Frères Scott", "Pilot"],
+    [
+      "Les Frères Scott - S01E02 - The Places You Have Come to Fear the Most",
+      "Les Frères Scott",
+      "The Places You Have Come to Fear the Most",
+    ],
+    ["S02E05 The Third Mainland", "Lagos Line", "The Third Mainland"],
+    ["2x05 - Night Fare", "Lagos Line", "Night Fare"],
+    ["Rush Hour", "Lagos Line", "Rush Hour"],
+    ["FR ★ Lagos Line - S01E01", "Lagos Line", null],
+    [null, "Lagos Line", null],
+  ])("%s", (raw, series, expected) => {
+    expect(episodeTitle(raw, series)).toBe(expected);
   });
 });
 
