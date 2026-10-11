@@ -94,12 +94,15 @@ export function Player() {
           void toggleFullscreen();
       }}
       onWheel={(event) => {
+        wake();
+        // The wheel scrolls panels (the guide, track menus); only over the video does it set the volume.
+        if ((event.target as HTMLElement).closest("[data-guide], [role=menu], [data-stats]"))
+          return;
         const volume = Math.round(
           Math.min(100, Math.max(0, usePlayer.getState().volume - Math.sign(event.deltaY) * 5)),
         );
         void setVolume(volume);
         showNotice(`Volume ${volume}%`);
-        wake();
       }}
       data-player
     >
@@ -110,8 +113,9 @@ export function Player() {
 
       <div
         className={`absolute inset-0 flex flex-col justify-between bg-(image:--scrim-player) transition-opacity duration-250 ease-out motion-reduce:transition-none ${
-          visible ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
+          // Keep the header chips and the controls clear of the guide panel (400 px).
+          guide ? "pr-100" : ""
+        } ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
         data-player-overlay
         data-visible={visible}
         onDoubleClick={(event) => {

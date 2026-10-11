@@ -19,8 +19,10 @@ export function Toast({ message }: ToastProps) {
     >
       <AnimatePresence>
         {message && (
+          // One toast that updates in place: a quick run of messages
+          // ("Volume 80%", "85%"…) must not stack copies side by side.
           <motion.div
-            key={message}
+            key="toast"
             className="rounded-chip bg-overlay-strong px-4 py-2 text-small font-medium text-text"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0, transition: enter }}

@@ -129,7 +129,7 @@ export function PreviewPane({ channel, onWatch, onCatchup }: PreviewPaneProps) {
           <CatchupList channel={channel} onPlay={onCatchup} />
         ) : upcoming.length > 0 ? (
           upcoming.slice(0, 3).map((p) => (
-            <div key={p.start} className="flex gap-4 py-2 text-small">
+            <div key={`${p.start}-${p.title}`} className="flex gap-4 py-2 text-small">
               <span className="w-11 flex-none font-mono text-caption text-text-faint">
                 {formatClock(p.start)}
               </span>
