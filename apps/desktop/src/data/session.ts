@@ -111,6 +111,31 @@ async function refreshLibrary() {
   set({ counts, syncState });
 }
 
+let clientFor: { accountId: string; client: Promise<XtreamClient | null> } | null = null;
+
+/** The active account's library database, or null before boot or with no account. */
+export function activeLibrary(): SqlAdapter | null {
+  return libraryDb;
+}
+
+/**
+ * A client for the active account (password from the keychain, read once per
+ * account). Null when there is no account or its password is gone.
+ */
+export function activeClient(): Promise<XtreamClient | null> {
+  const { active } = useSession.getState();
+  if (!active) return Promise.resolve(null);
+  if (clientFor?.accountId !== active.id) {
+    clientFor = {
+      accountId: active.id,
+      client: loadCredentials(keychain, active).then((creds) =>
+        creds ? new XtreamClient(tauriHttp, creds) : null,
+      ),
+    };
+  }
+  return clientFor.client;
+}
+
 /** Dev checks only: channel logo URLs from the active library. */
 export async function sampleLiveIcons(limit: number): Promise<string[]> {
   return libraryDb ? readLiveIcons(libraryDb, limit) : [];
@@ -192,6 +217,7 @@ export async function connect(form: ConnectForm, signal?: AbortSignal): Promise<
     // Keychain first: an account row without its password would be unusable.
     // If the row then fails to save, remove the new secret so none is orphaned.
     await keychain.set(secretKey(account.id), form.password);
+    clientFor = null;
     try {
       if (existing) await updateAccountInfo(db, account.id, info);
       else await insertAccount(db, account);
