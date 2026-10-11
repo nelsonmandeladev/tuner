@@ -29,6 +29,21 @@ export interface PlayerSource {
   live: boolean;
   /** Asks mpv to load the stream (`loadfile … replace`). Called again on every reconnect. */
   load: () => Promise<void>;
+  /**
+   * Another way to open the same thing, tried once if this source fails
+   * before its first frame (catch-up URL forms differ between panels).
+   */
+  fallback?: () => PlayerSource | null;
+  /** Called at the first frame of a user-initiated open. */
+  onFirstFrame?: () => void;
+}
+
+export interface OpenOptions {
+  /**
+   * `performance.now()` of the user action that asked for this stream. Timings
+   * run from it, so they include everything the app does before mpv starts.
+   */
+  requestedAt?: number;
 }
 
 const MAX_RECONNECTS = 3;
@@ -41,6 +56,8 @@ interface PendingLoad {
   timing: LoadTiming["kind"] | null;
   /** True until mpv reports `start-file` for this load (the old file's events still arrive until then). */
   awaitingStart: boolean;
+  startMs: number | null;
+  issuedMs: number | null;
   openedMs: number | null;
   videoMs: number | null;
 }
@@ -79,7 +96,8 @@ export function startPlayer(): Promise<void> {
   return started;
 }
 
-export async function open(source: PlayerSource) {
+export async function open(source: PlayerSource, { requestedAt }: OpenOptions = {}) {
+  const t0 = requestedAt ?? performance.now();
   await startPlayer();
   clearTimers();
   const { status } = usePlayer.getState();
@@ -93,6 +111,7 @@ export async function open(source: PlayerSource) {
   }
   set({
     status: "loading",
+    ...(zapping ? {} : { shown: false }),
     label: source.label,
     live: source.live,
     error: null,
@@ -102,7 +121,7 @@ export async function open(source: PlayerSource) {
     duration: null,
   });
   trace(`open "${source.label}" (${zapping ? "zap" : "first"})`);
-  await load(zapping ? "zap" : "first");
+  await load(zapping ? "zap" : "first", t0);
 }
 
 export async function stop() {
@@ -110,7 +129,7 @@ export async function stop() {
   current = null;
   pending = null;
   await mpv.stop();
-  set({ ...resetPlayback(), status: "idle", label: null });
+  set({ ...resetPlayback(), status: "idle", label: null, shown: false });
 }
 
 /** Opens the current source again, e.g. from the error state's retry button. */
@@ -131,12 +150,22 @@ export const setVolume = mpv.setVolume;
 export const setAudioTrack = mpv.setAudioTrack;
 export const setSubtitleTrack = mpv.setSubtitleTrack;
 
-async function load(timing: PendingLoad["timing"]) {
+async function load(timing: PendingLoad["timing"], t0 = performance.now()) {
   const source = current;
   if (!source) return;
-  pending = { t0: performance.now(), timing, awaitingStart: true, openedMs: null, videoMs: null };
+  const load: PendingLoad = {
+    t0,
+    timing,
+    awaitingStart: true,
+    startMs: null,
+    issuedMs: null,
+    openedMs: null,
+    videoMs: null,
+  };
+  pending = load;
   try {
     await source.load();
+    load.issuedMs = performance.now() - t0;
   } catch (error) {
     if (source !== current) return;
     trace(`load failed: ${String(error)}`);
@@ -150,7 +179,10 @@ function handleEvent(event: MpvEvent) {
   switch (event.event) {
     case "start-file":
       set((s) => ({ loads: s.loads + 1 }));
-      if (pending) pending.awaitingStart = false;
+      if (pending?.awaitingStart) {
+        pending.awaitingStart = false;
+        pending.startMs = now - pending.t0;
+      }
       trace("start-file");
       break;
     case "file-loaded":
@@ -184,17 +216,26 @@ function firstFrame(load: PendingLoad, now: number) {
       kind: load.timing,
       label: current.label,
       totalMs: Math.round(now - load.t0),
+      startMs: load.startMs === null ? null : Math.round(load.startMs),
+      issuedMs: load.issuedMs === null ? null : Math.round(load.issuedMs),
       openedMs: load.openedMs === null ? null : Math.round(load.openedMs),
       videoMs: load.videoMs === null ? null : Math.round(load.videoMs),
     };
     set((s) => ({ timings: [...s.timings, timing] }));
+    current.onFirstFrame?.();
     trace(
       `first frame ${timing.kind} ${timing.totalMs} ms (opened ${timing.openedMs}, video ${timing.videoMs})`,
     );
   } else {
     trace(`playing again after reconnect ${attempt}`);
   }
-  set({ status: "playing", reconnectAttempt: 0, error: null, buffering: pausedForCache });
+  set({
+    status: "playing",
+    shown: true,
+    reconnectAttempt: 0,
+    error: null,
+    buffering: pausedForCache,
+  });
   clearTimeout(stableTimer);
   stableTimer = setTimeout(() => (attempt = 0), STABLE_AFTER_MS);
 }
@@ -212,7 +253,15 @@ function failed(why: string) {
     void mpv.setHwdec("no").then(() => load(null));
     return;
   }
+  const fallback = pending !== null ? source.fallback?.() : null;
+  if (fallback) {
+    trace(`${why}: trying the other URL form`);
+    current = fallback;
+    void load(pending?.timing ?? null, pending?.t0);
+    return;
+  }
   if (!source.live) {
+    pending = null;
     set({ status: "error", buffering: false, error: "This video stopped playing." });
     return;
   }

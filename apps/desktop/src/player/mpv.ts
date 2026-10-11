@@ -123,4 +123,8 @@ export const mpv = {
   setHwdec: (mode: "auto-safe" | "no") => setProperty("hwdec", mode),
   setVideoMargins: (ratio: VideoMarginRatio) => setVideoMarginRatio(ratio),
   getNumber: (name: string) => getProperty(name, "double"),
+  getString: (name: string) => getProperty(name, "string"),
+  /** Dev checks only: saves what the video output shows (`window`) or the video frame. */
+  screenshotToFile: (path: string, flags: "window" | "video") =>
+    command("screenshot-to-file", [path, flags]),
 };

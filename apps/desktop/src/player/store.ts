@@ -22,8 +22,15 @@ export type PlayerStatus = "idle" | "loading" | "playing" | "reconnecting" | "en
 export interface LoadTiming {
   kind: "first" | "zap";
   label: string;
-  /** Load command → first frame. */
+  /** Request (user action, or the load command) → first frame. */
   totalMs: number;
+  /**
+   * Request → mpv's `start-file` event: what the app spends before mpv opens
+   * the stream, plus one event's trip back to the webview.
+   */
+  startMs: number | null;
+  /** Request → the load command accepted (keychain, URL, IPC): the app's own share. */
+  issuedMs: number | null;
   /** Load command → `file-loaded` (connect + probe). */
   openedMs: number | null;
   /** Load command → `video-reconfig` (decoder and video output ready). */
@@ -36,6 +43,12 @@ export interface PlayerState {
   label: string | null;
   live: boolean;
   paused: boolean;
+  /**
+   * A picture is on screen: true from a first frame until the player stops.
+   * A zap keeps it true, because mpv keeps the last frame up until the next
+   * stream's first frame replaces it.
+   */
+  shown: boolean;
   /** Waiting on the network: opening, or stalled while playing. */
   buffering: boolean;
   timePos: number | null;
@@ -58,6 +71,7 @@ export const initialPlayerState: PlayerState = {
   label: null,
   live: false,
   paused: false,
+  shown: false,
   buffering: false,
   timePos: null,
   duration: null,
