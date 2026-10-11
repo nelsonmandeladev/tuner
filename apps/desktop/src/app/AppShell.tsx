@@ -11,7 +11,7 @@ export function AppShell() {
   useGlobalShortcuts();
 
   return (
-    <div className="flex h-full bg-bg text-text">
+    <div className="flex h-full text-text">
       <Sidebar />
       <main className="min-w-0 flex-1 overflow-y-auto">
         <motion.div

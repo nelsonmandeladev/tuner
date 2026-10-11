@@ -1,6 +1,9 @@
 import { MotionConfig } from "motion/react";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
+import { Backdrop } from "../player/Backdrop";
+import { Player } from "../screens/Player";
+import { PlaybackScope } from "./PlaybackScope";
 import { Connect } from "../screens/Connect";
 import { Home } from "../screens/Home";
 import { LiveTV } from "../screens/LiveTV";
@@ -19,7 +22,9 @@ export function App() {
   return (
     // "user": honour prefers-reduced-motion by dropping transforms, keeping opacity.
     <MotionConfig reducedMotion="user">
+      <Backdrop />
       <BrowserRouter>
+        <PlaybackScope />
         {DevAutorun && "__TAURI_INTERNALS__" in window && (
           <Suspense>
             <DevAutorun />
@@ -36,6 +41,7 @@ export function App() {
               <Route path="search" element={<Search />} />
               <Route path="settings" element={<Settings />} />
             </Route>
+            <Route path="watch" element={<Player />} />
           </Route>
           {PlayerDebug && (
             <Route

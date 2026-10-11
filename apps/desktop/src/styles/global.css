@@ -8,10 +8,15 @@
     height: 100%;
   }
 
+  /* A stacking context, so the Backdrop (z-index -1) paints above the transparent page but under every screen. */
+  #root {
+    isolation: isolate;
+  }
+
   /*
    * Transparent so mpv, which draws under the webview, can show through
-   * (docs/DECISIONS.md D2). Screens paint their own background: AppShell is
-   * opaque --bg, the player leaves a hole where the video goes.
+   * (docs/DECISIONS.md D2). `Backdrop` paints --bg everywhere except the
+   * video hole.
    */
   html,
   body {
@@ -35,5 +40,11 @@
 
   button {
     cursor: pointer;
+  }
+
+  /* Thin scrollbars in the app's colours instead of the light Windows default. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
   }
 }
