@@ -31,6 +31,24 @@ export default defineConfig([
     },
   },
   {
+    // Rule 6: only the adapters in src/data reach the network and the databases.
+    files: ["apps/desktop/src/**/*.{ts,tsx}"],
+    ignores: ["apps/desktop/src/data/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@tauri-apps/plugin-http", "@tauri-apps/plugin-sql"],
+              message: "Go through the adapters in src/data and the stores built on them.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // UI never fetches (CLAUDE.md rule 6): only packages/core talks to the provider.
     files: ["apps/desktop/src/**/*.{ts,tsx}"],
     rules: {
