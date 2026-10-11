@@ -154,12 +154,29 @@ fn scrub(text: &str, secrets: &[&str]) -> String {
         .fold(text.to_string(), |acc, s| acc.replace(&s, "***"))
 }
 
-/// Plays `request` from `account` in the window's mpv instance.
+/// mpv's `loadfile` arguments: replace the current file, optionally starting
+/// at `start` seconds (a per-file option, so it never sticks to later files).
+/// The third argument is the playlist index, ignored by `replace` (mpv 0.38+).
+fn loadfile_args(url: String, start: Option<f64>) -> Result<Vec<serde_json::Value>, String> {
+    let mut args = vec![url.into(), "replace".into()];
+    if let Some(secs) = start {
+        if !secs.is_finite() || secs < 0.0 {
+            return Err("Invalid start position".into());
+        }
+        args.push("-1".into());
+        args.push(format!("start={secs:.3}").into());
+    }
+    Ok(args)
+}
+
+/// Plays `request` from `account` in the window's mpv instance, from `start`
+/// seconds when given (resume).
 #[tauri::command]
 pub async fn stream_load<R: Runtime>(
     app: AppHandle<R>,
     account: StreamAccount,
     request: StreamRequest,
+    start: Option<f64>,
 ) -> Result<(), String> {
     if !valid_server(&account.server) {
         return Err("Invalid server address".into());
@@ -169,9 +186,10 @@ pub async fn stream_load<R: Runtime>(
     let url = build_url(&account.server, &account.username, &password, &request)
         .map_err(|e| scrub(&e, &[&account.username, &password]))?;
 
+    let args = loadfile_args(url, start)?;
     tauri::async_runtime::spawn_blocking(move || {
         app.mpv()
-            .command("loadfile", &vec![url.into(), "replace".into()], WINDOW)
+            .command("loadfile", &args, WINDOW)
             .map_err(|e| scrub(&e.to_string(), &[&account.username, &password]))
     })
     .await
@@ -235,6 +253,20 @@ mod tests {
         assert!(!valid_server("file:///etc/passwd"));
         assert!(!valid_server("http://host/path"));
         assert!(!valid_server("http://user:pw@host"));
+    }
+
+    #[test]
+    fn adds_a_start_position_as_a_per_file_option() {
+        assert_eq!(
+            loadfile_args("u".into(), None).unwrap(),
+            vec!["u", "replace"]
+        );
+        assert_eq!(
+            loadfile_args("u".into(), Some(754.25)).unwrap(),
+            vec!["u", "replace", "-1", "start=754.250"]
+        );
+        assert!(loadfile_args("u".into(), Some(f64::NAN)).is_err());
+        assert!(loadfile_args("u".into(), Some(-1.0)).is_err());
     }
 
     #[test]
