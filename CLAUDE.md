@@ -50,6 +50,9 @@ Run from the repo root. Keep this list current.
 | `pnpm format` | Prettier write (Tailwind class sorting included). Markdown is not formatted |
 | `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
 | `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
+| `TUNER_M1_SUITE="live=<id>,hevc=<id>,ac3=<id>.<ext>,eac3=<id>.<ext>" pnpm dev` | Dev build that opens `/debug/player` and runs the M1 playback suite by itself; results print as `[player] RESULT …` lines. Ids come from your own account (never commit them) |
+
+**libmpv binaries** (needed before `pnpm dev` or `pnpm tauri build`; `src-tauri/lib/` is gitignored and bundled as resources): put `libmpv-2.dll` (from `mpv-dev-lgpl-x86_64-<date>.7z`, [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild/releases), non-`v3`) and `libmpv-wrapper.dll` (from `libmpv-wrapper-windows-x86_64.zip`, [nini22P/libmpv-wrapper](https://github.com/nini22P/libmpv-wrapper/releases)) in `apps/desktop/src-tauri/lib/`. Check each archive against its release's `sha256.txt`. M1 used build `20261011-git-d94d095814` and wrapper `v0.1.1`. The player debug screen opens with Ctrl+Shift+D in dev builds.
 
 Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter @tuner/desktop add …` or `pnpm --filter @tuner/core add …`. TypeScript is pinned to `~6.0` because typescript-eslint does not support 7.x yet.
 
@@ -73,5 +76,5 @@ Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter 
 - ~~Primary OS for M1 and v1 first release~~ **Answered 2026-10-11: Windows.** macOS later.
 - Final app name and icon.
 - ~~Live TV preview behaviour~~ **Answered 2026-10-11: auto-play muted on selection.**
-- Does the provider support catch-up (`tv_archive`)? Check during M2 with real data.
+- Does the provider support catch-up (`tv_archive`)? Check during M2 with real data. *Seen in M1 (2026-10-11): 402 of 21,791 live channels have `tv_archive` on; catch-up playback still untested.*
 - Auto-update in v1 or manual installs? Default until answered: manual.

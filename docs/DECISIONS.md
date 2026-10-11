@@ -5,7 +5,7 @@ Each entry is settled unless its status says otherwise. To change one, ask the u
 | # | Decision | Status |
 | --- | --- | --- |
 | D1 | Tauri 2 + React + TypeScript for the desktop app | Decided |
-| D2 | libmpv for playback; embedding method chosen in M1 | **Open until M1** |
+| D2 | libmpv for playback; embedded with `tauri-plugin-libmpv` (option 1) | **Option 1 chosen 2026-10-11; timing targets pending review** |
 | D3 | Data logic in a portable TypeScript core (`packages/core`) | Decided |
 | D4 | SQLite via `tauri-plugin-sql` as the local cache | Decided |
 | D5 | Passwords in the OS keychain via the Rust `keyring` crate | Decided |
@@ -36,6 +36,52 @@ Small installers and low memory compared with Electron, a Rust side for native w
 4. Last resort, needs user approval: mpv as a separate borderless window driven over JSON IPC, positioned under a transparent Tauri overlay window.
 
 Write the outcome here (which option, which OS, measured first-frame and zap times, known issues) before M2 starts. If macOS fails options 1–3, tell the user: shipping Windows first is a reasonable call, but it is theirs to make.
+
+### M1 outcome · 2026-10-11 · Windows 11 · option 1, pending review of the timing targets
+
+**Chosen: option 1, `tauri-plugin-libmpv` 0.3.2** (+ `tauri-plugin-libmpv-api`), libmpv `mpv-dev-lgpl-x86_64-20261011-git-d94d095814` (zhongfly build, non-v3) and `libmpv-wrapper` 0.1.1, both in `src-tauri/lib/` and bundled as resources. Options 2–4 were not tried: option 1 passed every embedding check, and the checks it misses are timing. That time is spent in the provider's stream and in FFmpeg, which options 2 and 3 would use unchanged.
+
+**How it works.** mpv gets the main window's HWND as `wid` and draws under the WebView2 layer. The window is `transparent`, `html`/`body` are transparent, and screens paint their own background. `VideoSurface` marks the hole in the DOM and keeps mpv's `video-margin-ratio-*` matched to it, so the Live TV preview and the full-screen player are the same instance and the same stream (rule 5). Stream URLs are built in Rust and passed to mpv directly, so the password never enters the webview.
+
+**Measured** on the user's subscription (`max_connections` 1, formats `ts`/`m3u8`, server timezone Europe/Paris). Times run from the load command to mpv's `playback-restart`, read from mpv events.
+
+| Check | Result |
+| --- | --- |
+| Live `.ts`, stream 2626 (H.264 1080p, AAC 2.0, d3d11va), first frame | median 2562 ms, worst 2880 ms (n=5); second run median 2680, worst 3138. Before tuning: median 2910, worst 3871. **Target 1.5 s: missed** |
+| Zap 2626 → 2631, same instance | median 2585 ms, worst 2905 ms (n=6). **Target 1 s: missed** |
+| Live `.m3u8`, stream 2626 | Plays. Opening takes 13–27 s inside FFmpeg's HLS demuxer (n=4) |
+| HEVC: live 2632 (HEVC + AAC, d3d11va) | Plays; first frame 2367 ms |
+| AC3: movie 1285272 (HEVC 3840×1604, AC3 5.1, d3d11va) | Plays with the AC3 5.1 track active; first frame 5993 ms. Sound not checked by ear yet |
+| E-AC3: movie 1292323 (HEVC 4K, E-AC3 5.1) | Not run yet (see open items) |
+| Alignment: preview, fill window, OS full screen, resize to 1100×700 / 1600×960 / 1440×900, 125 % DPI | Video box from mpv's `osd-width/height` and margins vs. the DOM rectangle: **0 px** off in every state |
+| Same instance across layout changes | Test pattern: 1 load through preview → fill → full screen → preview |
+| Reconnect | A real provider drop (`eof-reached` on live) recovered on its own: reconnect 1/3 after 1 s, playing again |
+
+**Why live start is slow (and not fixable in the player).**
+- **Network, ~1.0–1.5 s to first byte.** Every stream URL answers with a `302` to a separate streaming host, so there are two connects before the first byte.
+- **Stream start, ~1.15 s.** The streaming host sends one cached keyframe (SPS + IDR at the first byte), then nothing until the live feed catches up. The H.264 decoder holds that keyframe in its B-frame reorder buffer until the next frames arrive.
+- Forcing `low_delay` output would break frame order on B-frame streams, so it was rejected.
+- What the player could remove, it did: FFmpeg's stream-info probe cost ~1.5 s on live TS (`demuxer-lavf-probe-info=nostreams`). Smaller `analyzeduration`/`probesize`, `fflags=+nobuffer`, `vd-lavc-threads=1` and `hwdec=no` made no measurable difference and were dropped.
+- Any player on this provider pays the network and stream-start costs. Ways to hide them are M3 work: show the channel logo and now-playing instantly, and keep the last frame during a zap.
+
+**Settings that matter** (`apps/desktop/src/player/mpv.ts`):
+- `demuxer-lavf-probe-info=nostreams`: −1.5 s on live TS.
+- `http-header-fields=Connection: close`: FFmpeg keeps the first keep-alive socket of the `302` hop open, even after `stop`. The provider counts that socket against `max_connections`, so with 1 connection every zap would trip the limit. With `close`, a socket monitor showed at most one provider socket at any time.
+- `network-timeout=10`, `keep-open=yes`.
+- Tuning values are passed as strings: integer options reject JSON numbers.
+
+**Rejected / not tried.**
+- Options 2–4: not needed (see above).
+- `.m3u8` as a primary format: slow to open, and every HLS open leaves a session the provider keeps counting for minutes (`active_cons` rose to 4 on a 1-connection account). Use `.ts` and fall back to HLS only when `allowed_output_formats` lacks `ts`.
+
+**Known issues.**
+- Timing targets missed for the provider-side reasons above.
+- Installer size: NSIS **32.58 MiB** (2.4 MB in M0), MSI 43.19 MiB. `libmpv-2.dll` alone is 96.5 MB on disk. The NSIS installer is under the 40 MB target with little room left; trimming options (a smaller libmpv build) are M6 work.
+- The player is not reachable in release builds yet (the debug screen is dev-only), so release playback is first exercised in M3.
+- Any frame that paints nothing shows the desktop through the transparent window: every screen must paint its background, `Suspense` fallbacks included.
+- Live resize was checked between sizes, not frame by frame during a drag; a one-frame lag of the margins during fast drags is possible.
+- The plugin `trace!`-logs `loadfile` arguments (stream URLs). It is silent because no `log` backend is installed. If one is added later (e.g. `tauri-plugin-log`), filter out `tauri_plugin_libmpv` below `info`.
+- The plugin is single-maintainer, and its JS package pins `@tauri-apps/api` (overridden in `pnpm-workspace.yaml`).
 
 **Not an option:** HTML `<video>` + hls.js/mpegts.js as the main player. It fails on AC3/E-AC3/HEVC, which is the reason this project exists.
 
