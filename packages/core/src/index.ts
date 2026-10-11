@@ -13,5 +13,6 @@ export * from "./storage";
 export * from "./sync";
 export * from "./epg";
 export * from "./live";
+export * from "./vod";
 export { ART_PALETTE_SIZE, artIndex, artLayout, monogram } from "./art";
 export { foldText } from "./text";
