@@ -33,6 +33,10 @@ Put these in `apps/desktop/src/styles/tokens.css` as CSS custom properties. Comp
 | `--overlay-strong` | `rgba(5,6,6,0.82)` | Selected chip on video |
 | `--ghost` | `rgba(241,243,242,0.10)` | Ghost buttons on video and heroes |
 | `--track` | `#23272B` | Progress track on dark (`rgba(241,243,242,0.18)` on art/video) |
+| `--art-panel` | `#101418` | Connect screen art panel (from `Connect.dc.html`, added in M2) |
+| `--art-shape-1` / `--art-shape-2` | `#17222B` / `#1D2C37` | The panel's two large circles |
+| `--text-soft` | `#B4BAB7` | Intro copy on the art panel |
+| `--text-faint` | `#8A908D` | Small print: "includes no channels", the keychain note, "(optional)" |
 
 Light theme: not designed yet. In M6, derive light tokens with the same roles, keep the accent, darken it for text if contrast fails, and ask the user to review.
 

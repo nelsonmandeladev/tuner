@@ -50,6 +50,8 @@ Run from the repo root. Keep this list current.
 | `pnpm format` | Prettier write (Tailwind class sorting included). Markdown is not formatted |
 | `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
 | `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
+| `TUNER_M2_SUITE=1 pnpm dev` | Dev build that connects with the `.env.local` account through the real Connect code (unreachable server, connect, keychain, first sync, image cache) and prints `RESULT` lines. Run it on a fresh app-data folder to time a first sync |
+| `node scripts/record-fixtures.mjs` | Re-record the Xtream fixtures in `packages/core/test/fixtures` from `.env.local` (credentials, host and content names are stripped) |
 | `TUNER_M1_SUITE="live=<id>,hevc=<id>,ac3=<id>.<ext>,eac3=<id>.<ext>" pnpm dev` | Dev build that opens `/debug/player` and runs the M1 playback suite by itself; results print as `[player] RESULT …` lines. Ids come from your own account (never commit them) |
 
 **libmpv binaries** (needed before `pnpm dev` or `pnpm tauri build`; `src-tauri/lib/` is gitignored and bundled as resources): put `libmpv-2.dll` (from `mpv-dev-lgpl-x86_64-<date>.7z`, [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild/releases), non-`v3`) and `libmpv-wrapper.dll` (from `libmpv-wrapper-windows-x86_64.zip`, [nini22P/libmpv-wrapper](https://github.com/nini22P/libmpv-wrapper/releases)) in `apps/desktop/src-tauri/lib/`. Check each archive against its release's `sha256.txt`. M1 used build `20261011-git-d94d095814` and wrapper `v0.1.1`. The player debug screen opens with Ctrl+Shift+D in dev builds.

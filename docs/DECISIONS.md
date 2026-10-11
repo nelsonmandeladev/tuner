@@ -95,11 +95,14 @@ Write the outcome here (which option, which OS, measured first-frame and zap tim
 
 ```ts
 interface HttpAdapter { getJson(url: string, opts?: { timeoutMs?: number; signal?: AbortSignal }): Promise<unknown> }
-interface SqlAdapter  { execute(sql: string, params?: unknown[]): Promise<void>; select<T>(sql: string, params?: unknown[]): Promise<T[]>; transaction(fn: () => Promise<void>): Promise<void> }
+interface SqlAdapter  { execute(sql: string, params?: SqlValue[]): Promise<void>; select<T>(sql: string, params?: SqlValue[]): Promise<T[]>; transaction(fn: (tx: SqlTransaction) => Promise<void>): Promise<void> }
+interface SqlTransaction { execute(sql: string, params?: SqlValue[]): void }  // queues writes; no reads inside
 interface SecretStore { get(key: string): Promise<string | null>; set(key: string, value: string): Promise<void>; delete(key: string): Promise<void> }
 ```
 
 A React Native build later provides its own adapters and keeps the core unchanged.
+
+**Refined 2026-10-11 (M2, user approved the approach):** `transaction` hands its callback a write-only `tx` whose `execute` queues statements, so an adapter can send them as one batch. tauri-plugin-sql runs each JS call on any connection of its pool, so BEGIN/COMMIT sent as separate calls is not safe; the desktop adapter sends the batch to a Rust command (`db_batch`) that runs it in one sqlx transaction on the plugin's own pool. `sqlx` 0.8 was added as a direct dependency for this (user approved; the same crate the plugin already compiles). Placeholders are `?`.
 
 ## D4 · SQLite via tauri-plugin-sql
 

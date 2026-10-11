@@ -152,3 +152,7 @@ Catch-up start time is in the **server timezone** (`server_info.timezone`). Some
 - **Connection limit.** `max_connections` is often 1. Never open two streams at once (CLAUDE.md rule 5), and close the old stream before opening a new one when zapping.
 - **Icons** are often `http://`, sometimes dead. Always go through the image cache (DECISIONS D7) with a fallback.
 - **Duplicate names** across categories are common; key everything by id.
+- **One item, several categories.** The same `stream_id` / `series_id` appears once per category it belongs to, never twice in one (seen 2026-10-11: 138 channels, 1,361 movies with up to 4 categories, 35 series). Store the item once and the memberships separately.
+- **Wrong password → HTTP 429 with an empty body** on the test provider; other panels answer `200` with an empty body or `[]`, or `auth: 0`. Treat 429 as "check the login, then wait" (it is also a rate limit after repeated failures, which can block the IP).
+- **Every stream URL redirects** (`302`) to a separate streaming host. FFmpeg keeps the first keep-alive socket open after the stream stops and the provider counts it as a connection: send `Connection: close` (DECISIONS D2).
+- **Idle channels start on demand**: the first byte of a channel nobody is watching can take ~16 s; a retry seconds later answers in under 1 s.
