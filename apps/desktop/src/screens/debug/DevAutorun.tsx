@@ -4,14 +4,18 @@ import { useNavigate } from "react-router";
 import { devAutorunPlan } from "./autorun";
 import { debugTrace } from "./debugSource";
 import { runM2Suite, type DevCredentials } from "./m2Suite";
+import { parseM3Plan, runM3Suite } from "./m3Suite";
+import { useSession } from "../../data/session";
 
 const STARTED_KEY = "tuner.m2SuiteStarted";
+const M3_STARTED_KEY = "tuner.m3SuiteStarted";
 
 /**
  * Dev only, rendered at the router root: starts the acceptance suites the app
  * was launched with. `TUNER_M1_SUITE` opens the player debug screen (which
  * runs it); `TUNER_M2_SUITE=1` runs the connect and sync checks. Each runs
- * once per window, also across hot reloads.
+ * once per window, also across hot reloads. `TUNER_M3_SUITE` runs the Live TV
+ * and player checks (see m3Suite.ts).
  */
 export default function DevAutorun() {
   const navigate = useNavigate();
@@ -25,6 +29,19 @@ export default function DevAutorun() {
       if (cancelled || !creds || once(STARTED_KEY)) return;
       void navigate("/connect");
       void runM2Suite(creds, debugTrace, () => void navigate("/", { replace: true }));
+    });
+    void invoke<string | null>("debug_m3_suite").then(async (value) => {
+      if (cancelled || !value) return;
+      const plan = parseM3Plan(value);
+      if (!plan) {
+        debugTrace("TUNER_M3_SUITE is set but not a valid plan (live=…,archive=…)");
+        return;
+      }
+      // Wait for the cached library before starting (boot runs in main.tsx).
+      while (useSession.getState().phase === "booting")
+        await new Promise((r) => setTimeout(r, 100));
+      if (cancelled || once(M3_STARTED_KEY)) return;
+      void runM3Suite(plan, navigate, debugTrace);
     });
     return () => {
       cancelled = true;
