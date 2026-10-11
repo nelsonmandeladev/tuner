@@ -47,6 +47,10 @@ fn client() -> &'static reqwest::Client {
             .user_agent(USER_AGENT)
             .connect_timeout(Duration::from_secs(8))
             .timeout(Duration::from_secs(10))
+            // Logos often share one host: scrolling a long list would otherwise
+            // leave dozens of idle keep-alive sockets open to it (seen in M3).
+            .pool_max_idle_per_host(4)
+            .pool_idle_timeout(Duration::from_secs(15))
             .build()
             .expect("image HTTP client")
     })
