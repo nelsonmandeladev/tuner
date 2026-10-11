@@ -1,0 +1,52 @@
+{
+  "epg_listings": [
+    {
+      "id": "1227777",
+      "epg_id": "1087",
+      "title": "cHJvZ3JhbW1lIHRpdGxlIDI2MA==",
+      "lang": "fr",
+      "start": "2026-10-11 18:10:00",
+      "end": "2026-10-11 19:45:00",
+      "description": "cHJvZ3JhbW1lIGRlc2NyaXB0aW9uIDI2MSDDqQ==",
+      "channel_id": "channel-262.example",
+      "start_timestamp": "1791742200",
+      "stop_timestamp": "1791747900"
+    },
+    {
+      "id": "1227778",
+      "epg_id": "1087",
+      "title": "cHJvZ3JhbW1lIHRpdGxlIDI2MyDil4kgRkhE",
+      "lang": "fr",
+      "start": "2026-10-11 19:45:00",
+      "end": "2026-10-11 19:50:00",
+      "description": "cHJvZ3JhbW1lIGRlc2NyaXB0aW9uIDI2NA==",
+      "channel_id": "channel-265.example",
+      "start_timestamp": "1791747900",
+      "stop_timestamp": "1791748200"
+    },
+    {
+      "id": "1227779",
+      "epg_id": "1087",
+      "title": "cHJvZ3JhbW1lIHRpdGxlIDI2NiDimIU=",
+      "lang": "fr",
+      "start": "2026-10-11 19:50:00",
+      "end": "2026-10-11 19:55:00",
+      "description": "cHJvZ3JhbW1lIGRlc2NyaXB0aW9uIDI2NyDil4kgRkhE",
+      "channel_id": "channel-268.example",
+      "start_timestamp": "1791748200",
+      "stop_timestamp": "1791748500"
+    },
+    {
+      "id": "1227780",
+      "epg_id": "1087",
+      "title": "cHJvZ3JhbW1lIHRpdGxlIDI2OSDDqQ==",
+      "lang": "fr",
+      "start": "2026-10-11 19:55:00",
+      "end": "2026-10-11 20:00:00",
+      "description": "cHJvZ3JhbW1lIGRlc2NyaXB0aW9uIDI3MCDimIU=",
+      "channel_id": "channel-271.example",
+      "start_timestamp": "1791748500",
+      "stop_timestamp": "1791748800"
+    }
+  ]
+}
