@@ -41,6 +41,39 @@
   --text-soft: #b4bab7;
   --text-faint: #8a908d;
 
+  /* Live TV and player (design/screens/LiveTV.dc.html, Player.dc.html; added in M3) */
+  --line-outline: #2e3338; /* selected channel row ring, Catch-up badge */
+  --overlay-preview: rgba(10, 11, 12, 0.7); /* LIVE and "Preview · muted" chips on the preview */
+  --ghost-strong: rgba(241, 243, 242, 0.12); /* back button on video */
+  --line-on-media: rgba(241, 243, 242, 0.3); /* key hints on video */
+  --art-glow: rgba(241, 243, 242, 0.08); /* generated art: light circle */
+  --art-shade: rgba(10, 11, 12, 0.25); /* generated art: dark circle */
+  --scrim-player: linear-gradient(
+    180deg,
+    rgba(5, 6, 6, 0.75) 0%,
+    rgba(5, 6, 6, 0) 22%,
+    rgba(5, 6, 6, 0) 55%,
+    rgba(5, 6, 6, 0.92) 100%
+  );
+
+  /* Generated artwork palette, tint and shape (DESIGN.md "Artwork"), picked by artIndex() */
+  --art-0-tint: #1f3b57;
+  --art-0-shape: #2e5578;
+  --art-1-tint: #4a2a2a;
+  --art-1-shape: #6b3b3b;
+  --art-2-tint: #2a3550;
+  --art-2-shape: #3d4c72;
+  --art-3-tint: #1e4234;
+  --art-3-shape: #2c5e4a;
+  --art-4-tint: #3a2c4e;
+  --art-4-shape: #54406f;
+  --art-5-tint: #33230f;
+  --art-5-shape: #7a5420;
+  --art-6-tint: #18282a;
+  --art-6-shape: #2e5552;
+  --art-7-tint: #1e2414;
+  --art-7-shape: #3e5126;
+
   /* Motion */
   --ease-in-panel: cubic-bezier(0.2, 0.8, 0.2, 1);
   --duration-hover: 120ms;
@@ -92,6 +125,18 @@
   --text-eyebrow--letter-spacing: 0.08em;
   --text-mono: 12px;
   --text-mono--line-height: 1.4;
+  /* Live TV and player sizes from the M3 mockups */
+  --text-badge: 11px;
+  --text-badge--line-height: 1.4;
+  --text-badge--font-weight: 600;
+  --text-eyebrow-s: 12px;
+  --text-eyebrow-s--line-height: 1.4;
+  --text-eyebrow-s--font-weight: 600;
+  --text-eyebrow-s--letter-spacing: 0.08em;
+  --text-monogram-l: 28px;
+  --text-monogram-l--line-height: 1;
+  --text-monogram-l--font-weight: 800;
+  --text-monogram-l--letter-spacing: -0.04em;
   /* Brand wordmark in the sidebar (Montserrat 800, 21 px in Main.dc.html) */
   --text-wordmark: 21px;
   --text-wordmark--line-height: 1;
@@ -141,6 +186,12 @@
   --color-art-shape-2: var(--art-shape-2);
   --color-text-soft: var(--text-soft);
   --color-text-faint: var(--text-faint);
+  --color-line-outline: var(--line-outline);
+  --color-overlay-preview: var(--overlay-preview);
+  --color-ghost-strong: var(--ghost-strong);
+  --color-line-on-media: var(--line-on-media);
+  --color-art-glow: var(--art-glow);
+  --color-art-shade: var(--art-shade);
   --color-transparent: transparent;
   --color-current: currentColor;
 }
