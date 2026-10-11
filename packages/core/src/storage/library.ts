@@ -4,7 +4,7 @@
  * no screen ever sees half of one); readers take the database.
  */
 
-import type { SqlAdapter, SqlTransaction } from "../adapters";
+import type { SqlAdapter, SqlTransaction, SqlValue } from "../adapters";
 import type { ContentKind } from "../xtream/client";
 import type { Category, LiveStream, Series, VodStream } from "../xtream/schemas";
 import { insertRows } from "./insert";
@@ -23,9 +23,49 @@ export function replaceCategories(tx: SqlTransaction, kind: ContentKind, categor
   );
 }
 
-export function replaceLive(tx: SqlTransaction, streams: LiveStream[]) {
-  tx.execute("DELETE FROM live");
-  insertRows(
+/**
+ * Replaces one content list and its category memberships. Providers list the
+ * same item in several categories (never twice in one): the item is stored
+ * once, at its first position, and every listing becomes a membership row.
+ * Returns the number of distinct items stored.
+ */
+function replaceItems<T extends { id: number; categoryId: string | null }>(
+  tx: SqlTransaction,
+  kind: ContentKind,
+  columns: readonly string[],
+  items: T[],
+  toRow: (item: T, position: number) => SqlValue[],
+): number {
+  const table = TABLE[kind];
+  const rows: SqlValue[][] = [];
+  const memberships: SqlValue[][] = [];
+  const seen = new Set<number>();
+  const positionInCategory = new Map<string, number>();
+  for (const item of items) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      rows.push(toRow(item, rows.length));
+    }
+    if (item.categoryId !== null) {
+      const position = positionInCategory.get(item.categoryId) ?? 0;
+      positionInCategory.set(item.categoryId, position + 1);
+      memberships.push([kind, item.categoryId, item.id, position]);
+    }
+  }
+  tx.execute(`DELETE FROM ${table}`);
+  tx.execute("DELETE FROM category_items WHERE kind = ?", [kind]);
+  insertRows(tx, table, columns, rows);
+  // OR IGNORE: one listing per (category, item) even if a provider repeats one.
+  insertRows(tx, "category_items", ["kind", "category_id", "item_id", "position"], memberships, {
+    orIgnore: true,
+  });
+  return rows.length;
+}
+
+const TABLE: Record<ContentKind, string> = { live: "live", vod: "vod", series: "series" };
+
+export function replaceLive(tx: SqlTransaction, streams: LiveStream[]): number {
+  return replaceItems(
     tx,
     "live",
     [
@@ -34,52 +74,38 @@ export function replaceLive(tx: SqlTransaction, streams: LiveStream[]) {
       "name",
       "icon",
       "epg_channel_id",
-      "category_id",
       "added_at",
       "tv_archive",
       "tv_archive_days",
       "position",
     ],
-    streams.map((s, i) => [
+    streams,
+    (s, i) => [
       s.id,
       s.num,
       s.name,
       s.icon,
       s.epgChannelId,
-      s.categoryId,
       s.addedAt,
       s.tvArchive,
       s.tvArchiveDays,
       i,
-    ]),
-    { orReplace: true },
+    ],
   );
 }
 
-export function replaceVod(tx: SqlTransaction, movies: VodStream[]) {
-  tx.execute("DELETE FROM vod");
-  insertRows(
+export function replaceVod(tx: SqlTransaction, movies: VodStream[]): number {
+  return replaceItems(
     tx,
     "vod",
-    ["id", "num", "name", "icon", "rating", "added_at", "category_id", "ext", "position"],
-    movies.map((m, i) => [
-      m.id,
-      m.num,
-      m.name,
-      m.icon,
-      m.rating,
-      m.addedAt,
-      m.categoryId,
-      m.ext,
-      i,
-    ]),
-    { orReplace: true },
+    ["id", "num", "name", "icon", "rating", "added_at", "ext", "position"],
+    movies,
+    (m, i) => [m.id, m.num, m.name, m.icon, m.rating, m.addedAt, m.ext, i],
   );
 }
 
-export function replaceSeries(tx: SqlTransaction, series: Series[]) {
-  tx.execute("DELETE FROM series");
-  insertRows(
+export function replaceSeries(tx: SqlTransaction, series: Series[]): number {
+  return replaceItems(
     tx,
     "series",
     [
@@ -96,10 +122,10 @@ export function replaceSeries(tx: SqlTransaction, series: Series[]) {
       "rating",
       "backdrop",
       "episode_run_time",
-      "category_id",
       "position",
     ],
-    series.map((s, i) => [
+    series,
+    (s, i) => [
       s.id,
       s.num,
       s.name,
@@ -113,10 +139,8 @@ export function replaceSeries(tx: SqlTransaction, series: Series[]) {
       s.rating,
       s.backdrop,
       s.episodeRunTime,
-      s.categoryId,
       i,
-    ]),
-    { orReplace: true },
+    ],
   );
 }
 
@@ -185,10 +209,9 @@ export async function readCategories(
   db: SqlAdapter,
   kind: ContentKind,
 ): Promise<CategoryWithCount[]> {
-  const table = { live: "live", vod: "vod", series: "series" }[kind];
   const rows = await db.select<{ id: string; name: string; count: number; hidden: number }>(
     `SELECT c.id, c.name,
-       (SELECT COUNT(*) FROM ${table} t WHERE t.category_id = c.id) AS count,
+       (SELECT COUNT(*) FROM category_items m WHERE m.kind = c.kind AND m.category_id = c.id) AS count,
        EXISTS (SELECT 1 FROM hidden_categories h WHERE h.kind = c.kind AND h.id = c.id) AS hidden
      FROM categories c WHERE c.kind = ? ORDER BY c.position`,
     [kind],

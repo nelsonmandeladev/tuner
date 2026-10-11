@@ -6,7 +6,7 @@
  * usable as soon as the live step is done, while movies and series continue.
  */
 
-import type { SqlAdapter } from "../adapters";
+import type { SqlAdapter, SqlTransaction } from "../adapters";
 import {
   recordSync,
   replaceCategories,
@@ -51,7 +51,8 @@ export async function syncLibrary(
   async function step<T>(
     name: SyncStep,
     fetch: () => Promise<{ items: T[]; skipped: number }>,
-    save: (tx: Parameters<Parameters<SqlAdapter["transaction"]>[0]>[0], items: T[]) => void,
+    /** Returns how many distinct items it stored, when that differs from the listing. */
+    save: (tx: SqlTransaction, items: T[]) => number | void,
   ) {
     checkAborted();
     onProgress?.({ step: name, phase: "fetching" });
@@ -59,13 +60,14 @@ export async function syncLibrary(
     checkAborted();
     onProgress?.({ step: name, phase: "saving", count: list.items.length });
     const at = now();
+    let stored = list.items.length;
     await db.transaction(async (tx) => {
-      save(tx, list.items);
-      recordSync(tx, name, list.items.length, list.skipped, at);
+      stored = save(tx, list.items) ?? list.items.length;
+      recordSync(tx, name, stored, list.skipped, at);
     });
-    counts[name] = list.items.length;
+    counts[name] = stored;
     skipped[name] = list.skipped;
-    onProgress?.({ step: name, phase: "done", count: list.items.length, skipped: list.skipped });
+    onProgress?.({ step: name, phase: "done", count: stored, skipped: list.skipped });
   }
 
   await step(

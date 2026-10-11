@@ -15,9 +15,10 @@ export function insertRows(
   table: string,
   columns: readonly string[],
   rows: readonly SqlValue[][],
-  { orReplace = false } = {},
+  { orReplace = false, orIgnore = false } = {},
 ) {
-  const head = `INSERT ${orReplace ? "OR REPLACE " : ""}INTO ${table} (${columns.join(", ")}) VALUES `;
+  const conflict = orReplace ? "OR REPLACE " : orIgnore ? "OR IGNORE " : "";
+  const head = `INSERT ${conflict}INTO ${table} (${columns.join(", ")}) VALUES `;
   const tuple = `(${columns.map(() => "?").join(", ")})`;
   for (let start = 0; start < rows.length; start += ROWS_PER_STATEMENT) {
     const chunk = rows.slice(start, start + ROWS_PER_STATEMENT);

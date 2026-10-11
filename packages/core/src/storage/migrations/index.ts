@@ -63,13 +63,11 @@ export const accountMigrations: Migration[] = [
         name TEXT NOT NULL,
         icon TEXT,
         epg_channel_id TEXT,
-        category_id TEXT,
         added_at INTEGER,
         tv_archive INTEGER NOT NULL DEFAULT 0,
         tv_archive_days INTEGER NOT NULL DEFAULT 0,
         position INTEGER NOT NULL
       )`,
-      `CREATE INDEX live_by_category ON live (category_id, position)`,
       `CREATE INDEX live_by_name ON live (name COLLATE NOCASE)`,
       `CREATE TABLE vod (
         id INTEGER PRIMARY KEY,
@@ -78,11 +76,9 @@ export const accountMigrations: Migration[] = [
         icon TEXT,
         rating REAL,
         added_at INTEGER,
-        category_id TEXT,
         ext TEXT NOT NULL,
         position INTEGER NOT NULL
       )`,
-      `CREATE INDEX vod_by_category ON vod (category_id, position)`,
       `CREATE INDEX vod_by_name ON vod (name COLLATE NOCASE)`,
       `CREATE INDEX vod_by_added ON vod (added_at DESC)`,
       `CREATE TABLE series (
@@ -99,12 +95,21 @@ export const accountMigrations: Migration[] = [
         rating REAL,
         backdrop TEXT,
         episode_run_time INTEGER,
-        category_id TEXT,
         position INTEGER NOT NULL
       )`,
-      `CREATE INDEX series_by_category ON series (category_id, position)`,
       `CREATE INDEX series_by_name ON series (name COLLATE NOCASE)`,
       `CREATE INDEX series_by_modified ON series (last_modified_at DESC)`,
+      // Providers list one item in several categories (never twice in one), so
+      // membership is its own table: one row per (category, item).
+      `CREATE TABLE category_items (
+        kind TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        item_id INTEGER NOT NULL,
+        position INTEGER NOT NULL,
+        PRIMARY KEY (kind, category_id, item_id)
+      )`,
+      `CREATE INDEX category_items_by_position ON category_items (kind, category_id, position)`,
+      `CREATE INDEX category_items_by_item ON category_items (kind, item_id)`,
       // When each list was last synced, and how many items it had.
       `CREATE TABLE sync_state (
         list TEXT PRIMARY KEY,

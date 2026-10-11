@@ -17,6 +17,7 @@ import {
   readCounts,
   replaceCategories,
   replaceLive,
+  replaceVod,
 } from "../../src/storage/library";
 import { migrate } from "../../src/storage/migrate";
 import { accountMigrations, appMigrations, type Migration } from "../../src/storage/migrations";
@@ -75,10 +76,8 @@ describe("migrations", () => {
       "SELECT name FROM sqlite_master WHERE type = 'index'",
     );
     const names = indexes.map((i) => i.name);
-    for (const table of ["live", "vod", "series"]) {
-      expect(names).toContain(`${table}_by_category`);
-      expect(names).toContain(`${table}_by_name`);
-    }
+    expect(names).toContain("category_items_by_position");
+    for (const table of ["live", "vod", "series"]) expect(names).toContain(`${table}_by_name`);
   });
 });
 
@@ -183,13 +182,58 @@ describe("library", () => {
     ).rejects.toThrow();
     expect((await readCounts(db)).live).toBe(3);
 
-    await db.transaction(async (tx) => replaceLive(tx, [channel(2), channel(4, "2")]));
+    await db.transaction(async (tx) => {
+      replaceLive(tx, [channel(2), channel(4, "2")]);
+    });
     expect(await readCounts(db)).toEqual({ live: 2, vod: 0, series: 0 });
     expect(await db.select("SELECT id FROM favorites")).toEqual([{ id: 2 }]);
     expect(await readCategories(db, "live")).toEqual([
       { id: "1", name: "News", count: 1, hidden: false },
       { id: "2", name: "Sport", count: 1, hidden: true },
     ]);
+  });
+
+  it("stores an item listed in several categories once, in each category", async () => {
+    const db = memoryDb();
+    await migrate(db, accountMigrations);
+    const movie = (id: number, categoryId: string) => ({
+      id,
+      num: id,
+      name: `Movie ${id}`,
+      icon: null,
+      rating: null,
+      addedAt: null,
+      categoryId,
+      ext: "mkv",
+    });
+    let stored = 0;
+    await db.transaction(async (tx) => {
+      replaceCategories(tx, "vod", [
+        { id: "a", name: "Action", parentId: null },
+        { id: "b", name: "New", parentId: null },
+        { id: "c", name: "4K", parentId: null },
+      ]);
+      stored = replaceVod(tx, [
+        movie(1, "a"),
+        movie(2, "a"),
+        movie(1, "b"),
+        movie(1, "c"),
+        movie(3, "b"),
+      ]);
+    });
+    expect(stored).toBe(3);
+    expect((await readCounts(db)).vod).toBe(3);
+    expect((await readCategories(db, "vod")).map((c) => [c.id, c.count])).toEqual([
+      ["a", 2],
+      ["b", 2],
+      ["c", 1],
+    ]);
+    // Position within each category follows the provider's order.
+    expect(
+      await db.select(
+        "SELECT item_id FROM category_items WHERE kind = 'vod' AND category_id = 'b' ORDER BY position",
+      ),
+    ).toEqual([{ item_id: 1 }, { item_id: 3 }]);
   });
 
   it("inserts large lists in several statements", async () => {
