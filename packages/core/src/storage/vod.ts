@@ -34,7 +34,16 @@ export interface SeriesItem {
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 /** Every movie in provider order (~12,000 rows on the test provider; columns kept few). */
-export async function readVodItems(db: SqlAdapter): Promise<VodItem[]> {
+export function readVodItems(db: SqlAdapter): Promise<VodItem[]> {
+  return selectVod(db, "ORDER BY position");
+}
+
+/** One movie, or null if the last sync no longer lists it. */
+export async function readVodItem(db: SqlAdapter, id: number): Promise<VodItem | null> {
+  return (await selectVod(db, "WHERE id = ?", [id]))[0] ?? null;
+}
+
+async function selectVod(db: SqlAdapter, tail: string, params: number[] = []): Promise<VodItem[]> {
   const rows = await db.select<{
     id: number;
     name: string;
@@ -42,7 +51,7 @@ export async function readVodItems(db: SqlAdapter): Promise<VodItem[]> {
     rating: number | null;
     added_at: number | null;
     ext: string;
-  }>("SELECT id, name, icon, rating, added_at, ext FROM vod ORDER BY position");
+  }>(`SELECT id, name, icon, rating, added_at, ext FROM vod ${tail}`, params);
   return rows.map((r) => ({
     id: Number(r.id),
     name: r.name,
@@ -53,7 +62,20 @@ export async function readVodItems(db: SqlAdapter): Promise<VodItem[]> {
   }));
 }
 
-export async function readSeriesItems(db: SqlAdapter): Promise<SeriesItem[]> {
+export function readSeriesItems(db: SqlAdapter): Promise<SeriesItem[]> {
+  return selectSeries(db, "ORDER BY position");
+}
+
+/** One series, or null if the last sync no longer lists it. */
+export async function readSeriesItem(db: SqlAdapter, id: number): Promise<SeriesItem | null> {
+  return (await selectSeries(db, "WHERE id = ?", [id]))[0] ?? null;
+}
+
+async function selectSeries(
+  db: SqlAdapter,
+  tail: string,
+  params: number[] = [],
+): Promise<SeriesItem[]> {
   const rows = await db.select<{
     id: number;
     name: string;
@@ -66,7 +88,8 @@ export async function readSeriesItems(db: SqlAdapter): Promise<SeriesItem[]> {
     last_modified_at: number | null;
   }>(
     `SELECT id, name, cover, backdrop, plot, genre, release_date, rating, last_modified_at
-     FROM series ORDER BY position`,
+     FROM series ${tail}`,
+    params,
   );
   return rows.map((r) => ({
     id: Number(r.id),

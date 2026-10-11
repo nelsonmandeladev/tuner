@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { HttpError } from "../../src/adapters";
 import {
+  readSeriesItem,
+  readVodItem,
   readVodItems,
   readResume,
   replaceEpisodes,
@@ -178,6 +180,9 @@ describe("vod storage", () => {
         },
       ]);
     });
+    expect((await readVodItem(db, 1))?.icon).toBe("http://x/a.jpg");
+    expect(await readVodItem(db, 3)).toBeNull();
+    expect((await readSeriesItem(db, 9))?.genre).toBe("Drama");
     expect((await readVodItems(db)).map((v) => [v.id, v.ext, v.rating])).toEqual([
       [2, "mkv", 7],
       [1, "mp4", null],
