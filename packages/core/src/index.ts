@@ -9,3 +9,4 @@ export type {
 } from "./adapters";
 export { REDACTED, redact } from "./redact";
 export * from "./xtream";
+export * from "./storage";
