@@ -11,3 +11,4 @@ export { REDACTED, redact } from "./redact";
 export * from "./xtream";
 export * from "./storage";
 export * from "./sync";
+export * from "./epg";
