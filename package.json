@@ -1,0 +1,38 @@
+{
+  "name": "tuner",
+  "version": "0.1.0",
+  "description": "Tuner: IPTV player for your own Xtream Codes subscription",
+  "scripts": {
+    "dev": "pnpm --filter @tuner/desktop tauri dev",
+    "dev:web": "pnpm --filter @tuner/desktop dev",
+    "build": "pnpm --filter @tuner/desktop build",
+    "tauri": "pnpm --filter @tuner/desktop tauri",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "eslint . && prettier --check . && pnpm typecheck",
+    "format": "prettier --write ."
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.11.2",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.11.2",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

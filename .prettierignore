@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+design/
+**/src-tauri/target
+**/src-tauri/gen
+**/dist
+# Authored docs keep their own formatting.
+*.md
+.claude/

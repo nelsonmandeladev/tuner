@@ -7,3 +7,7 @@ target/
 *.db-journal
 .DS_Store
 apps/desktop/src-tauri/lib/
+dist-ssr/
+*.log
+.vite/
+apps/desktop/src-tauri/gen/schemas/
