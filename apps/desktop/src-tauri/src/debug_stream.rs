@@ -161,3 +161,26 @@ pub fn debug_autorun() -> Option<String> {
 pub fn debug_trace(line: String) {
     println!("[player] {line}");
 }
+
+#[derive(serde::Serialize)]
+pub struct DevCredentials {
+    server: String,
+    username: String,
+    password: String,
+}
+
+/// The .env.local account, only when the app was started with
+/// `TUNER_M2_SUITE=1`: the M2 suite connects with it exactly as the Connect
+/// form would. Debug builds only, like the rest of this module.
+#[tauri::command]
+pub fn debug_m2_credentials() -> Result<Option<DevCredentials>, String> {
+    if std::env::var("TUNER_M2_SUITE").ok().as_deref() != Some("1") {
+        return Ok(None);
+    }
+    let account = Account::load()?;
+    Ok(Some(DevCredentials {
+        server: account.server,
+        username: account.username,
+        password: account.password,
+    }))
+}

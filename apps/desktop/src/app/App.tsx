@@ -13,12 +13,18 @@ import { RequireAccount } from "./RequireAccount";
 
 // Dev builds only: import.meta.env.DEV is false in release, so the bundler drops the import.
 const PlayerDebug = import.meta.env.DEV ? lazy(() => import("../screens/debug/PlayerDebug")) : null;
+const DevAutorun = import.meta.env.DEV ? lazy(() => import("../screens/debug/DevAutorun")) : null;
 
 export function App() {
   return (
     // "user": honour prefers-reduced-motion by dropping transforms, keeping opacity.
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
+        {DevAutorun && "__TAURI_INTERNALS__" in window && (
+          <Suspense>
+            <DevAutorun />
+          </Suspense>
+        )}
         <Routes>
           <Route path="connect" element={<Connect />} />
           <Route element={<RequireAccount />}>

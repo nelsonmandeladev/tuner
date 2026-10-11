@@ -22,7 +22,8 @@ pub fn run() {
         secrets::secret_delete,
         debug_stream::debug_stream_load,
         debug_stream::debug_trace,
-        debug_stream::debug_autorun
+        debug_stream::debug_autorun,
+        debug_stream::debug_m2_credentials
     ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
