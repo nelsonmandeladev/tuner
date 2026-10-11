@@ -128,7 +128,7 @@ export function LiveTV() {
 
   return (
     <div
-      className="relative grid h-full grid-cols-[minmax(184px,232px)_minmax(320px,1fr)_minmax(320px,460px)]"
+      className="relative grid h-full grid-cols-[minmax(200px,264px)_minmax(320px,1fr)_minmax(320px,460px)]"
       data-live-screen
     >
       <CategoryList />

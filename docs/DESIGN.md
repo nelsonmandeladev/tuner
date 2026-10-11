@@ -117,6 +117,7 @@ Built in the mockups' language; review these:
 - **Stream info (I):** a mono panel top-left (codec, size, decoder, bitrates, dropped frames, buffer).
 - **Number entry:** a "Channel 12_" chip top-right while digits are typed.
 - **Errors:** a card over the last frame (player) or a bar on the preview, with "Try again"; a specific message when every connection of the subscription is in use.
+- **Categories pane:** 264 px wide instead of the mockup's 232 (user review, 2026-10-11): provider category names are long.
 - **Mismatches:** the mockup's filter field is 44 high (DESIGN says inputs are 48): built at 44. Scrollbars are thin and in `--line-strong` (the mockup shows none). Channel numbers on the test provider run to 7 digits, so the number column sizes to the longest number in the list instead of 32 px.
 
 ## Motion

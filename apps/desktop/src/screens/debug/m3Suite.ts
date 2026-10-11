@@ -299,7 +299,7 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
       const measured = layoutNumbers();
       const expected: Record<string, number> = {
         sidebar: 248,
-        categories: 232,
+        categories: 264,
         preview: 460,
         "video-w": 424,
         "video-h": 238.5,
