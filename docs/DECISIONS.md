@@ -47,15 +47,16 @@ Write the outcome here (which option, which OS, measured first-frame and zap tim
 
 | Check | Result |
 | --- | --- |
-| Live `.ts`, stream 2626 (H.264 1080p, AAC 2.0, d3d11va), first frame | median 2562 ms, worst 2880 ms (n=5); second run median 2680, worst 3138. Before tuning: median 2910, worst 3871. **Target 1.5 s: missed** |
-| Zap 2626 → 2631, same instance | median 2585 ms, worst 2905 ms (n=6). **Target 1 s: missed** |
+| Live `.ts`, stream 2626 (H.264 1080p, AAC 2.0, d3d11va), first frame | median 2562 ms, worst 2880 ms (n=5). Later runs: 2680 / 3138, 2688 / 2948, 2935 / 3161. Before tuning: median 2910, worst 3871. **Target 1.5 s: missed** |
+| Zap 2626 → 2631, same instance | median 2585 ms, worst 2905 ms (n=6); final run median 2587, worst 7520. **Target 1 s: missed**. Channels nobody is watching start on demand at the provider: a first byte once took 16 s for 2630, and 0.97 s three seconds later |
 | Live `.m3u8`, stream 2626 | Plays. Opening takes 13–27 s inside FFmpeg's HLS demuxer (n=4) |
-| HEVC: live 2632 (HEVC + AAC, d3d11va) | Plays; first frame 2367 ms |
-| AC3: movie 1285272 (HEVC 3840×1604, AC3 5.1, d3d11va) | Plays with the AC3 5.1 track active; first frame 5993 ms. Sound not checked by ear yet |
-| E-AC3: movie 1292323 (HEVC 4K, E-AC3 5.1) | Not run yet (see open items) |
+| HEVC: live 2632 (HEVC 1920×1080 + AAC, d3d11va) | Plays; first frame 2367 ms |
+| AC3: movie 1285272 (HEVC 3840×1604, AC3 5.1, d3d11va) | Plays, first frame 5993 ms. Audio fr/en switch, 5 subtitle tracks select and clear, seek, pause, volume, mute and end of file all pass. Sound not checked by ear yet |
+| E-AC3: movie 1292323 (HEVC 3840×1600, E-AC3 5.1, d3d11va) | Plays. Same track, control and end-of-file checks all pass |
 | Alignment: preview, fill window, OS full screen, resize to 1100×700 / 1600×960 / 1440×900, 125 % DPI | Video box from mpv's `osd-width/height` and margins vs. the DOM rectangle: **0 px** off in every state |
-| Same instance across layout changes | Test pattern: 1 load through preview → fill → full screen → preview |
-| Reconnect | A real provider drop (`eof-reached` on live) recovered on its own: reconnect 1/3 after 1 s, playing again |
+| Same instance across layout changes | Live 2626 and the test pattern: no extra load through preview → fill → full screen → preview → three resizes |
+| One connection at a time | Socket monitor during the full suite: never two established provider sockets, none left after stop |
+| Reconnect | A real provider drop (`eof-reached` on live) recovered on its own. A simulated drop is back in 3.6 s. A dead stream gives up after 3 tries at 1 s / 2 s / 4 s and shows "The stream is not responding." |
 
 **Why live start is slow (and not fixable in the player).**
 - **Network, ~1.0–1.5 s to first byte.** Every stream URL answers with a `302` to a separate streaming host, so there are two connects before the first byte.
@@ -76,6 +77,7 @@ Write the outcome here (which option, which OS, measured first-frame and zap tim
 
 **Known issues.**
 - Timing targets missed for the provider-side reasons above.
+- With `Connection: close`, each VOD seek reconnects through the `302` hop (~1 s).
 - Installer size: NSIS **32.58 MiB** (2.4 MB in M0), MSI 43.19 MiB. `libmpv-2.dll` alone is 96.5 MB on disk. The NSIS installer is under the 40 MB target with little room left; trimming options (a smaller libmpv build) are M6 work.
 - The player is not reachable in release builds yet (the debug screen is dev-only), so release playback is first exercised in M3.
 - Any frame that paints nothing shows the desktop through the transparent window: every screen must paint its background, `Suspense` fallbacks included.
