@@ -12,7 +12,7 @@ Each entry is settled unless its status says otherwise. To change one, ask the u
 | D6 | Provider calls via `tauri-plugin-http` | Decided |
 | D7 | Images served through a Rust disk cache on a custom protocol | Decided |
 | D8 | Search with MiniSearch in a Web Worker | Decided |
-| D9 | State: Zustand. Lists: TanStack Virtual. Motion: Motion (framer-motion). Styling: CSS Modules + tokens | Decided |
+| D9 | State: Zustand. Lists: TanStack Virtual. Motion: Motion (framer-motion). Styling: Tailwind CSS v4 + tokens. Icons: Hugeicons | Decided (revised 2026-10-11) |
 | D10 | Fonts bundled locally (`@fontsource/*`), never loaded from Google at runtime | Decided |
 
 ## D1 · Tauri 2 + React
@@ -73,7 +73,9 @@ MiniSearch, built in a Web Worker after each sync from the SQLite rows (name, ty
 
 ## D9 · UI libraries
 
-Zustand for app state, TanStack Virtual for every long list and grid, React Router for screens, Motion for transitions, CSS Modules with tokens from `styles/tokens.css`. No component library: the design is custom and small.
+Zustand for app state, TanStack Virtual for every long list and grid, React Router for screens, Motion for transitions. No component library: the design is custom and small.
+
+**Revised 2026-10-11 (user decision, before M0):** styling is **Tailwind CSS v4** (`@tailwindcss/vite`) instead of CSS Modules, and icons are **Hugeicons** (`@hugeicons/react` + `@hugeicons/core-free-icons`, stroke-rounded) instead of Lucide. `styles/tokens.css` keeps the DESIGN.md tokens as CSS custom properties on `:root` and maps them into Tailwind's `@theme`. Tailwind's default colours, font sizes and radii are reset to `initial`, so only design tokens exist as utilities (`bg-surface`, `text-heading`, `rounded-card`) and rule 9 (no hard-coded colours or sizes) is enforced by the build.
 
 ## D10 · Local fonts
 

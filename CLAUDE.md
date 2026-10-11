@@ -18,7 +18,7 @@ Desktop app (Tauri 2 + React + libmpv) that signs in to any **Xtream Codes** IPT
 ## Stack
 
 - **Shell:** Tauri 2. Rust in `apps/desktop/src-tauri`.
-- **UI:** React + TypeScript (strict), Vite, React Router, Zustand, TanStack Virtual, Motion (framer-motion), CSS Modules over `tokens.css`.
+- **UI:** React + TypeScript (strict), Vite, React Router, Zustand, TanStack Virtual, Motion, Tailwind CSS v4 over `tokens.css` (design tokens as theme variables; default palette disabled), Hugeicons (`@hugeicons/react` + `@hugeicons/core-free-icons`).
 - **Core:** `packages/core`, plain TypeScript. Xtream client, models, sync, search. No React, no Tauri imports.
 - **Storage:** SQLite through `tauri-plugin-sql`. Passwords in the OS keychain through the Rust `keyring` crate.
 - **Network:** `tauri-plugin-http` (bypasses webview CORS; providers are often plain `http://`).
@@ -38,7 +38,20 @@ docs/  design/
 
 ## Commands
 
-Fill this in during M0 (`pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm tauri build`) and keep it current.
+Run from the repo root. Keep this list current.
+
+| Command | What it does |
+| --- | --- |
+| `pnpm install` | Install all workspace packages |
+| `pnpm dev` | Run the desktop app (`tauri dev`: Vite on :1420 + Rust) |
+| `pnpm dev:web` | Vite only, in a browser (no Tauri APIs, no mpv) |
+| `pnpm test` | Vitest in every package that has tests (`packages/core`) |
+| `pnpm lint` | ESLint, Prettier check, then `tsc --noEmit` in every package |
+| `pnpm format` | Prettier write (Tailwind class sorting included). Markdown is not formatted |
+| `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
+| `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
+
+Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter @tuner/desktop add …` or `pnpm --filter @tuner/core add …`. TypeScript is pinned to `~6.0` because typescript-eslint does not support 7.x yet.
 
 ## Rules
 
@@ -57,8 +70,8 @@ Fill this in during M0 (`pnpm dev`, `pnpm test`, `pnpm lint`, `pnpm tauri build`
 
 ## Open questions (ask the user, don't guess)
 
-- Primary OS for M1 and v1 first release: Windows or macOS? (Decides the M1 spike target.)
+- ~~Primary OS for M1 and v1 first release~~ **Answered 2026-10-11: Windows.** macOS later.
 - Final app name and icon.
-- Live TV preview: auto-play muted on selection, or only on click? Default until answered: auto-play muted.
+- ~~Live TV preview behaviour~~ **Answered 2026-10-11: auto-play muted on selection.**
 - Does the provider support catch-up (`tv_archive`)? Check during M2 with real data.
 - Auto-update in v1 or manual installs? Default until answered: manual.

@@ -86,7 +86,7 @@ Sidebar 248 wide · nav item 44 high · primary button 48 (52 on Connect) · ico
 | `PlayerOverlay` | Player | Top: back, logo, name, number; LIVE + stream info. Right: channel switcher (prev/current/next). Bottom: eyebrow "Now", title, next, progress with times, controls |
 | `Kbd` | Sidebar, player | Mono 12, 1px `--line-strong`, radius 6 |
 
-Icons: simple stroke icons (Lucide is a good match: stroke 1.8–2, round caps). No emoji.
+Icons: Hugeicons free stroke-rounded set (D9), 20 px, stroke 1.8, through the `Icon` component. No emoji.
 
 ## Artwork
 
