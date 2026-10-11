@@ -5,7 +5,7 @@ Each entry is settled unless its status says otherwise. To change one, ask the u
 | # | Decision | Status |
 | --- | --- | --- |
 | D1 | Tauri 2 + React + TypeScript for the desktop app | Decided |
-| D2 | libmpv for playback; embedded with `tauri-plugin-libmpv` (option 1) | **Option 1 chosen 2026-10-11; timing targets pending review** |
+| D2 | libmpv for playback; embedded with `tauri-plugin-libmpv` (option 1) | Decided 2026-10-11 |
 | D3 | Data logic in a portable TypeScript core (`packages/core`) | Decided |
 | D4 | SQLite via `tauri-plugin-sql` as the local cache | Decided |
 | D5 | Passwords in the OS keychain via the Rust `keyring` crate | Decided |
@@ -37,7 +37,9 @@ Small installers and low memory compared with Electron, a Rust side for native w
 
 Write the outcome here (which option, which OS, measured first-frame and zap times, known issues) before M2 starts. If macOS fails options 1–3, tell the user: shipping Windows first is a reasonable call, but it is theirs to make.
 
-### M1 outcome · 2026-10-11 · Windows 11 · option 1, pending review of the timing targets
+### M1 outcome · 2026-10-11 · Windows 11 · option 1
+
+**User decision (2026-10-11):** option 1 accepted. The live first-frame and zap targets are recorded as missed because of the provider (see below), and M2 goes ahead. M3 makes zapping *feel* instant instead: channel name and programme switch at once, and the last frame stays on screen until the new stream's first frame. Sound on AC3 5.1 (movie 1285272) confirmed by ear.
 
 **Chosen: option 1, `tauri-plugin-libmpv` 0.3.2** (+ `tauri-plugin-libmpv-api`), libmpv `mpv-dev-lgpl-x86_64-20261011-git-d94d095814` (zhongfly build, non-v3) and `libmpv-wrapper` 0.1.1, both in `src-tauri/lib/` and bundled as resources. Options 2–4 were not tried: option 1 passed every embedding check, and the checks it misses are timing. That time is spent in the provider's stream and in FFmpeg, which options 2 and 3 would use unchanged.
 
@@ -51,7 +53,7 @@ Write the outcome here (which option, which OS, measured first-frame and zap tim
 | Zap 2626 → 2631, same instance | median 2585 ms, worst 2905 ms (n=6); final run median 2587, worst 7520. **Target 1 s: missed**. Channels nobody is watching start on demand at the provider: a first byte once took 16 s for 2630, and 0.97 s three seconds later |
 | Live `.m3u8`, stream 2626 | Plays. Opening takes 13–27 s inside FFmpeg's HLS demuxer (n=4) |
 | HEVC: live 2632 (HEVC 1920×1080 + AAC, d3d11va) | Plays; first frame 2367 ms |
-| AC3: movie 1285272 (HEVC 3840×1604, AC3 5.1, d3d11va) | Plays, first frame 5993 ms. Audio fr/en switch, 5 subtitle tracks select and clear, seek, pause, volume, mute and end of file all pass. Sound not checked by ear yet |
+| AC3: movie 1285272 (HEVC 3840×1604, AC3 5.1, d3d11va) | Plays, first frame 5993 ms. Audio fr/en switch, 5 subtitle tracks select and clear, seek, pause, volume, mute and end of file all pass. Sound confirmed by the user |
 | E-AC3: movie 1292323 (HEVC 3840×1600, E-AC3 5.1, d3d11va) | Plays. Same track, control and end-of-file checks all pass |
 | Alignment: preview, fill window, OS full screen, resize to 1100×700 / 1600×960 / 1440×900, 125 % DPI | Video box from mpv's `osd-width/height` and margins vs. the DOM rectangle: **0 px** off in every state |
 | Same instance across layout changes | Live 2626 and the test pattern: no extra load through preview → fill → full screen → preview → three resizes |

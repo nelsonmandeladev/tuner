@@ -83,6 +83,8 @@ Never commit this file, never print its values.
 
 **Accept when:** 20,000-channel list scrolls at 60 fps (use a synthetic fixture if the real list is smaller); click to first frame under 1.5 s; zap under 1 s; overlay matches the mockup.
 
+On the user's provider the stream itself takes ~2.5 s to deliver a first frame (DECISIONS D2, accepted 2026-10-11). Measure what the app adds on top of that, and make a zap *feel* instant: channel name and now/next update within 100 ms of the key press, and the last frame stays up until the new one is ready.
+
 ## M4 · Movies and Series
 
 - [ ] Movies: category rail, virtualised poster grid, sort (recent, name, rating), detail page from `get_vod_info`.
