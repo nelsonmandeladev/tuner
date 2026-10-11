@@ -10,6 +10,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
+import { boot } from "./data/session";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -17,11 +18,16 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
-// The window starts hidden (tauri.conf.json) and is shown once the first frame
-// has painted, so the user never sees an empty or white window.
-// Two frames: the first runs before React's first paint, the second after it.
-requestAnimationFrame(() =>
-  requestAnimationFrame(() => {
-    if ("__TAURI_INTERNALS__" in window) void getCurrentWindow().show();
-  }),
+const inTauri = "__TAURI_INTERNALS__" in window;
+
+// The window starts hidden (tauri.conf.json) and is shown once the cached
+// library is loaded and its first frame has painted, so the user never sees an
+// empty window or a flash of the wrong screen. Two frames: the first runs
+// before React's paint, the second after it.
+void (inTauri ? boot() : Promise.resolve()).finally(() =>
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      if (inTauri) void getCurrentWindow().show();
+    }),
+  ),
 );

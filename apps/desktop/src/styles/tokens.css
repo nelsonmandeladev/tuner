@@ -34,6 +34,12 @@
   --track: #23272b;
   --track-on-media: rgba(241, 243, 242, 0.18);
   --avatar: #2a2418;
+  /* Connect screen art panel and its copy (design/screens/Connect.dc.html; not yet in DESIGN.md) */
+  --art-panel: #101418;
+  --art-shape-1: #17222b;
+  --art-shape-2: #1d2c37;
+  --text-soft: #b4bab7;
+  --text-faint: #8a908d;
 
   /* Motion */
   --ease-in-panel: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -130,6 +136,11 @@
   --color-track: var(--track);
   --color-track-on-media: var(--track-on-media);
   --color-avatar: var(--avatar);
+  --color-art-panel: var(--art-panel);
+  --color-art-shape-1: var(--art-shape-1);
+  --color-art-shape-2: var(--art-shape-2);
+  --color-text-soft: var(--text-soft);
+  --color-text-faint: var(--text-faint);
   --color-transparent: transparent;
   --color-current: currentColor;
 }
