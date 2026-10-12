@@ -134,6 +134,10 @@ Built in the mockups' language; review these:
 - **Up next:** a card bottom-right (eyebrow "Next episode", code, title, "Playing in 7 s" with a bar, Play now / Cancel), at 10 s left.
 - New tokens: `--ghost-soft`, `--scrim-hero`, `--scrim-hero-bottom`, `--text-poster`.
 
+### Resizable panes (M5 review)
+
+Live TV's categories and preview, and the category rail in Movies and Series, can be resized by dragging their edge (an 8-px grab area on the line; the line shows `--line-strong` on hover and `--accent` while dragging or focused). Arrow keys move a focused edge 16 px; a double-click restores the default. Defaults and minimums: categories 264 (200–440), preview 460 (320–760); the channel list and poster grid take the rest and never drop below 320 while dragging. Widths are remembered in app.db; on a narrow window panes shrink toward their minimum. The sidebar is not resizable.
+
 ### Home, search and favorites: what the mockups do not show (M5)
 
 Main.dc.html shows the hero, Favorite channels and Recently added movies. The rest is built in its language; review these:

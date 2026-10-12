@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { mpv } from "./mpv";
-import { useVideoHole } from "./videoHole";
+import { onLayoutMoved, useVideoHole } from "./videoHole";
 
 interface VideoSurfaceProps {
   className?: string;
@@ -65,7 +65,9 @@ export function VideoSurface({ className = "", radius = 0 }: VideoSurfaceProps) 
     observer.observe(element);
     observer.observe(document.documentElement);
     window.addEventListener("resize", sync);
+    const stopLayout = onLayoutMoved(sync);
     return () => {
+      stopLayout();
       cancelAnimationFrame(frame);
       cancelAnimationFrame(settling);
       observer.disconnect();

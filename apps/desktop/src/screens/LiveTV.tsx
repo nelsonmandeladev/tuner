@@ -27,6 +27,9 @@ import {
   useTuner,
 } from "../player/tuner";
 import { CategoryList } from "../components/CategoryList";
+import { roomFor } from "../app/layout";
+import { FlexPane, Pane } from "../components/Pane";
+import { ResizeHandle } from "../components/ResizeHandle";
 import { ChannelList } from "./live/ChannelList";
 import { NumberEntry } from "./live/NumberEntry";
 import { PreviewPane } from "./live/PreviewPane";
@@ -51,6 +54,7 @@ export function LiveTV() {
   const hiddenCategories = useLive((s) => s.hiddenCategories);
   const categoryId = useLive((s) => s.categoryId);
   const scrollToIndex = useRef<((index: number) => void) | null>(null);
+  const screen = useRef<HTMLDivElement>(null);
   useNow();
 
   useEffect(() => {
@@ -142,26 +146,42 @@ export function LiveTV() {
   }
 
   return (
-    <div
-      className="relative grid h-full grid-cols-[minmax(200px,264px)_minmax(320px,1fr)_minmax(320px,460px)]"
-      data-live-screen
-    >
-      <CategoryList
-        categories={categories}
-        hidden={hiddenCategories}
-        activeId={categoryId}
-        onSelect={selectCategory}
-        onSetHidden={(id, hidden) => void setHidden(id, hidden)}
+    // Categories | channels | preview, the outer two resizable (M5 review).
+    <div ref={screen} className="relative flex h-full" data-live-screen>
+      <Pane id="live.categories">
+        <CategoryList
+          categories={categories}
+          hidden={hiddenCategories}
+          activeId={categoryId}
+          onSelect={selectCategory}
+          onSetHidden={(id, hidden) => void setHidden(id, hidden)}
+        />
+      </Pane>
+      <ResizeHandle
+        pane="live.categories"
+        edge="end"
+        label="categories"
+        room={() => roomFor(screen.current, "live.categories", ["live.preview"])}
       />
-      <ChannelList onPick={pick} onOpen={openPlayer} scrollRef={scrollToIndex} />
-      <PreviewPane
-        channel={channel}
-        onWatch={() => openPlayer()}
-        onCatchup={(programme: Programme) => {
-          if (!channel) return;
-          void enterPlayer(navigate, playCatchup(channel.id, programme));
-        }}
+      <FlexPane>
+        <ChannelList onPick={pick} onOpen={openPlayer} scrollRef={scrollToIndex} />
+      </FlexPane>
+      <ResizeHandle
+        pane="live.preview"
+        edge="start"
+        label="preview"
+        room={() => roomFor(screen.current, "live.preview", ["live.categories"])}
       />
+      <Pane id="live.preview">
+        <PreviewPane
+          channel={channel}
+          onWatch={() => openPlayer()}
+          onCatchup={(programme: Programme) => {
+            if (!channel) return;
+            void enterPlayer(navigate, playCatchup(channel.id, programme));
+          }}
+        />
+      </Pane>
       <NumberEntry />
       <Toast message={notice} />
     </div>

@@ -1,8 +1,11 @@
 import type { GridSort } from "@tuner/core";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "../components/Button";
 import { CategoryList } from "../components/CategoryList";
+import { roomFor } from "../app/layout";
+import { FlexPane, Pane } from "../components/Pane";
+import { ResizeHandle } from "../components/ResizeHandle";
 import { EmptyState } from "../components/EmptyState";
 import { PosterGrid } from "../components/PosterGrid";
 import { Screen } from "../components/Screen";
@@ -27,6 +30,7 @@ const scrollOffsets = new Map<string, number>();
  */
 function Catalog({ store, path }: { store: CatalogStore; path: "/movies" | "/series" }) {
   const navigate = useNavigate();
+  const screen = useRef<HTMLDivElement>(null);
   const status = store.use((s) => s.status);
   const items = store.use((s) => s.items);
   const list = store.use((s) => s.list);
@@ -64,49 +68,57 @@ function Catalog({ store, path }: { store: CatalogStore; path: "/movies" | "/ser
   }
 
   return (
-    <div
-      className="grid h-full grid-cols-[minmax(200px,264px)_minmax(0,1fr)]"
-      data-catalog={store.kind}
-    >
-      <CategoryList
-        categories={categories}
-        hidden={hidden}
-        activeId={categoryId}
-        onSelect={store.selectCategory}
-        onSetHidden={(id, on) => void store.setHidden(id, on)}
+    // The category rail is resizable (M5 review); the grid takes the rest.
+    <div ref={screen} className="flex h-full" data-catalog={store.kind}>
+      <Pane id="catalog.categories">
+        <CategoryList
+          categories={categories}
+          hidden={hidden}
+          activeId={categoryId}
+          onSelect={store.selectCategory}
+          onSetHidden={(id, on) => void store.setHidden(id, on)}
+        />
+      </Pane>
+      <ResizeHandle
+        pane="catalog.categories"
+        edge="end"
+        label="categories"
+        room={() => roomFor(screen.current, "catalog.categories", [])}
       />
-      <section aria-label={label} className="flex min-h-0 min-w-0 flex-col gap-5">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-8">
-          <div className="flex min-w-0 items-baseline gap-3">
-            <h1 className="truncate text-title">{category?.name ?? label}</h1>
-            <span className="font-mono text-caption text-text-dim">
-              {count.format(list.length)}
-            </span>
+      <FlexPane>
+        <section aria-label={label} className="flex min-h-0 min-w-0 flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 px-8">
+            <div className="flex min-w-0 items-baseline gap-3">
+              <h1 className="truncate text-title">{category?.name ?? label}</h1>
+              <span className="font-mono text-caption text-text-dim">
+                {count.format(list.length)}
+              </span>
+            </div>
+            <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={store.setSort} />
           </div>
-          <SegmentedControl label="Sort" options={SORTS} value={sort} onChange={store.setSort} />
-        </div>
-        {status === "ready" && list.length === 0 ? (
-          <div className="px-8">
-            <EmptyState
-              message={
-                categoryId === FAVORITES
-                  ? `No favorite ${label.toLowerCase()} yet. Press the heart on any ${store.kind === "vod" ? "movie" : "series"}.`
-                  : "This category is empty."
-              }
+          {status === "ready" && list.length === 0 ? (
+            <div className="px-8">
+              <EmptyState
+                message={
+                  categoryId === FAVORITES
+                    ? `No favorite ${label.toLowerCase()} yet. Press the heart on any ${store.kind === "vod" ? "movie" : "series"}.`
+                    : "This category is empty."
+                }
+              />
+            </div>
+          ) : (
+            <PosterGrid
+              key={offsetKey}
+              ids={list}
+              items={items}
+              progress={progress}
+              initialOffset={scrollOffsets.get(offsetKey) ?? 0}
+              onScrollOffset={(offset) => scrollOffsets.set(offsetKey, offset)}
+              onOpen={(id) => void navigate(`${path}/${id}`)}
             />
-          </div>
-        ) : (
-          <PosterGrid
-            key={offsetKey}
-            ids={list}
-            items={items}
-            progress={progress}
-            initialOffset={scrollOffsets.get(offsetKey) ?? 0}
-            onScrollOffset={(offset) => scrollOffsets.set(offsetKey, offset)}
-            onOpen={(id) => void navigate(`${path}/${id}`)}
-          />
-        )}
-      </section>
+          )}
+        </section>
+      </FlexPane>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Outlet, useLocation } from "react-router";
 import { Sidebar } from "../components/Sidebar";
 import { useEffect, useRef } from "react";
+import { notifyLayoutMoved } from "../player/videoHole";
 import { runsUnderTitleBar, SIDEBAR_WIDTH, sidebarTransition, useLayout } from "./layout";
 
 /** Screen change: 180 ms fade with an 8 px rise (DESIGN.md "Motion"). */
@@ -30,6 +31,9 @@ export function AppShell() {
         animate={{ width: sidebarOpen ? SIDEBAR_WIDTH : 0 }}
         transition={sidebarTransition(sidebarOpen, reduceMotion)}
         inert={!sidebarOpen}
+        // The panes beside it move without resizing (the Live TV preview): keep the video on them.
+        onUpdate={notifyLayoutMoved}
+        onAnimationComplete={notifyLayoutMoved}
         data-sidebar-open={sidebarOpen}
       >
         <Sidebar />
