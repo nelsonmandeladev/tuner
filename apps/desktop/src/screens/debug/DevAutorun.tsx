@@ -7,12 +7,14 @@ import { runM2Suite, type DevCredentials } from "./m2Suite";
 import { parseM3Plan, runM3Suite } from "./m3Suite";
 import { parseM4Plan, runM4Suite } from "./m4Suite";
 import { parseM5Plan, runM5Suite } from "./m5Suite";
+import { parseM6Plan, runM6Suite } from "./m6Suite";
 import { useSession } from "../../data/session";
 
 const STARTED_KEY = "tuner.m2SuiteStarted";
 const M3_STARTED_KEY = "tuner.m3SuiteStarted";
 const M4_STARTED_KEY = "tuner.m4SuiteStarted";
 const M5_STARTED_KEY = "tuner.m5SuiteStarted";
+const M6_STARTED_KEY = "tuner.m6SuiteStarted";
 
 /**
  * Dev only, rendered at the router root: starts the acceptance suites the app
@@ -70,6 +72,18 @@ export default function DevAutorun() {
         await new Promise((r) => setTimeout(r, 100));
       if (cancelled || once(M5_STARTED_KEY)) return;
       void runM5Suite(plan, navigate, debugTrace);
+    });
+    void invoke<string | null>("debug_m6_suite").then(async (value) => {
+      if (cancelled || !value) return;
+      const plan = parseM6Plan(value);
+      if (!plan) {
+        debugTrace("TUNER_M6_SUITE is set but not a valid plan (live=…,movie=…,series=…)");
+        return;
+      }
+      while (useSession.getState().phase === "booting")
+        await new Promise((r) => setTimeout(r, 100));
+      if (cancelled || once(M6_STARTED_KEY)) return;
+      void runM6Suite(plan, navigate, debugTrace);
     });
     return () => {
       cancelled = true;

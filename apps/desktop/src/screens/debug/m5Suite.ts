@@ -17,15 +17,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import {
-  foldText,
-  recordHistory,
-  setFavorite,
-  splitTitleYear,
-  writeResume,
-  type SqlAdapter,
-  type SqlValue,
-} from "@tuner/core";
+import { foldText, recordHistory, setFavorite, splitTitleYear, writeResume } from "@tuner/core";
 import type { NavigateFunction } from "react-router";
 import { movies, series } from "../../data/catalog";
 import { useFavorites } from "../../data/favorites";
@@ -52,6 +44,7 @@ import {
   type Check,
   type Log,
 } from "./suiteKit";
+import { personalBackup } from "./personalBackup";
 
 export interface M5Plan {
   live: number;
@@ -77,73 +70,7 @@ export function parseM5Plan(value: string): M5Plan | null {
   return plan.live > 0 && plan.movie > 0 && plan.series > 0 ? plan : null;
 }
 
-/** Personal tables the suite may change, and the settings row that backs them up. */
-const PERSONAL = ["favorites", "history", "resume", "hidden_categories", "settings"] as const;
 const BACKUP_KEY = "dev.m5Suite.backup";
-
-type Backup = Record<(typeof PERSONAL)[number], Record<string, SqlValue>[]>;
-
-async function readBackup(db: SqlAdapter): Promise<Backup | null> {
-  const [row] = await db.select<{ value: string }>("SELECT value FROM settings WHERE key = ?", [
-    BACKUP_KEY,
-  ]);
-  return row ? (JSON.parse(row.value) as Backup) : null;
-}
-
-/** Copies the personal tables into one settings row (written before anything changes). */
-async function backUp(db: SqlAdapter): Promise<Backup> {
-  const backup = {} as Backup;
-  for (const table of PERSONAL) {
-    backup[table] = await db.select<Record<string, SqlValue>>(
-      `SELECT * FROM ${table}${table === "settings" ? " WHERE key <> ?" : ""}`,
-      table === "settings" ? [BACKUP_KEY] : [],
-    );
-  }
-  await db.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [
-    BACKUP_KEY,
-    JSON.stringify(backup),
-  ]);
-  return backup;
-}
-
-/** Puts every personal table back as it was, in one transaction, then drops the copy. */
-async function restore(db: SqlAdapter, backup: Backup) {
-  await db.transaction(async (tx) => {
-    for (const table of PERSONAL) {
-      tx.execute(`DELETE FROM ${table}${table === "settings" ? " WHERE key <> ?" : ""}`, [
-        ...(table === "settings" ? [BACKUP_KEY] : []),
-      ]);
-      for (const row of backup[table]) {
-        const columns = Object.keys(row);
-        tx.execute(
-          `INSERT INTO ${table} (${columns.join(", ")}) VALUES (${columns.map(() => "?").join(", ")})`,
-          columns.map((c) => row[c] ?? null),
-        );
-      }
-    }
-    tx.execute("DELETE FROM settings WHERE key = ?", [BACKUP_KEY]);
-  });
-}
-
-/** A stable fingerprint of the personal tables, to prove the restore. */
-async function fingerprint(db: SqlAdapter): Promise<string> {
-  const parts: string[] = [];
-  for (const table of PERSONAL) {
-    const rows = await db.select<Record<string, SqlValue>>(
-      `SELECT * FROM ${table}${table === "settings" ? " WHERE key <> ?" : ""}`,
-      table === "settings" ? [BACKUP_KEY] : [],
-    );
-    const lines = rows.map((r) => JSON.stringify(Object.entries(r).sort())).sort();
-    parts.push(`${table}:${rows.length}:${hash(lines.join("\n"))}`);
-  }
-  return parts.join(" ");
-}
-
-function hash(text: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
-  return (h >>> 0).toString(16).padStart(8, "0");
-}
 
 /** Sets an input's value the way typing does, so React's onChange runs. */
 function typeInto(input: HTMLInputElement, value: string) {
@@ -269,13 +196,14 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
   }
 
   // --- set up: copy the personal tables first, undo a crashed run --------------------------
-  const leftover = await readBackup(db);
+  const personal = personalBackup(db, BACKUP_KEY);
+  const leftover = await personal.read();
   if (leftover) {
-    await restore(db, leftover);
+    await personal.restore(leftover);
     info("leftover-restored", "a previous run's backup was found and restored first");
   }
-  const before = await fingerprint(db);
-  const backup = await backUp(db);
+  const before = await personal.fingerprint();
+  const backup = await personal.backUp();
   info("personal-data", `backed up (${before})`);
 
   const appWindow = getCurrentWindow();
@@ -314,8 +242,8 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
       after === 0 || after === -1,
       `active_cons ${after} 3 s after stop`,
     );
-    await restore(db, backup);
-    const restored = await fingerprint(db);
+    await personal.restore(backup);
+    const restored = await personal.fingerprint();
     check("personal-data-restored", restored === before, `after restore: ${restored}`);
     log(`${clock()} SUITE DONE ${JSON.stringify(results)}`);
     // Every store reloads from the restored tables.
