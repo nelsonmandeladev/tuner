@@ -25,7 +25,7 @@ export function splitTitleYear(name: string): TitleYear {
   let year: number | null = null;
   const tags: string[] = [];
   for (;;) {
-    const tag = TRAILING_TAG.exec(rest);
+    const tag: RegExpExecArray | null = TRAILING_TAG.exec(rest);
     if (tag && tag.index > 0) {
       const value = tag[1]!.trim();
       if (/^(?:19|20)\d\d$/.test(value) && year === null) year = Number(value);
@@ -33,7 +33,7 @@ export function splitTitleYear(name: string): TitleYear {
       rest = rest.slice(0, tag.index);
       continue;
     }
-    const match = year === null ? TRAILING_YEAR.exec(rest) : null;
+    const match: RegExpExecArray | null = year === null ? TRAILING_YEAR.exec(rest) : null;
     if (match && match.index > 0) {
       year = Number(match[1]);
       rest = rest.slice(0, match.index);
