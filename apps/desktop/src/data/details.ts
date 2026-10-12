@@ -10,11 +10,13 @@ import {
   loadVodInfo,
   foldText,
   readAccountPref,
+  readPersonCredits,
   readRelatedVod,
   readResume,
   readSeriesItem,
   readVodItem,
   writeAccountPref,
+  type PersonCredit,
   type ResumePoint,
   type SeriesInfo,
   type SeriesItem,
@@ -113,4 +115,19 @@ export async function loadRelatedMovies(id: number, title: string): Promise<Post
     if (related.length === RELATED_MOVIES) break;
   }
   return related;
+}
+
+/**
+ * Other titles in the library that credit a person (the cast sheet): every
+ * series, and movies whose details were fetched once (the list API has no
+ * cast for movies). Leaves out the title the sheet was opened from.
+ */
+export async function loadPersonCredits(
+  person: string,
+  from: { kind: "vod" | "series"; id: number },
+): Promise<PersonCredit[]> {
+  const db = activeLibrary();
+  if (!db) return [];
+  const credits = await readPersonCredits(db, person);
+  return credits.filter((c) => !(c.kind === from.kind && c.id === from.id));
 }

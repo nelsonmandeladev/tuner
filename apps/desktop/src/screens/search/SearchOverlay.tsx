@@ -1,5 +1,5 @@
 import { Search01Icon } from "@hugeicons/core-free-icons";
-import { artIndex, type SearchHit, type SearchKind } from "@tuner/core";
+import type { SearchHit, SearchKind } from "@tuner/core";
 import { AnimatePresence, motion } from "motion/react";
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -8,7 +8,7 @@ import { Button } from "../../components/Button";
 import { ChannelLogo } from "../../components/ChannelLogo";
 import { Icon } from "../../components/Icon";
 import { Kbd } from "../../components/Kbd";
-import { artworkUrl } from "../../data/artwork";
+import { PosterThumb } from "../../components/PosterThumb";
 import { closeSearch, prepareSearch, setQuery, useSearch } from "../../data/search";
 import { chooseResult } from "./choose";
 
@@ -253,29 +253,6 @@ const ResultRow = memo(function ResultRow({
     </div>
   );
 });
-
-/** A 2:3 poster at row height; a tint from the title's hash when there is none. */
-function PosterThumb({ title, icon }: { title: string; icon: string | null }) {
-  const src = artworkUrl(icon);
-  const [failed, setFailed] = useState<string | null>(null);
-  return (
-    <span
-      className="relative h-10 w-6.75 flex-none overflow-hidden rounded-chip"
-      style={{ background: `var(--art-${artIndex(title)}-tint)` }}
-    >
-      {src && failed !== src && (
-        <img
-          src={src}
-          alt=""
-          draggable={false}
-          decoding="async"
-          className="absolute inset-0 size-full object-cover"
-          onError={() => setFailed(src)}
-        />
-      )}
-    </span>
-  );
-}
 
 function Message({ text, children }: { text: string; children?: ReactNode }) {
   return (

@@ -1,5 +1,6 @@
 import { PlayIcon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { resumeFrom, resumeProgress, splitTitleYear, yearOf } from "@tuner/core";
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { formatPosition } from "../../app/format";
 import { Button } from "../../components/Button";
@@ -7,6 +8,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { Carousel, CarouselArrows } from "../../components/Carousel";
 import { FavoriteButton } from "../../components/FavoriteButton";
 import { PersonAvatar } from "../../components/PersonAvatar";
+import { PersonSheet, type SheetPerson } from "./PersonSheet";
 import { PosterCard } from "../../components/PosterCard";
 import { useCarouselControls } from "../../hooks/useCarouselControls";
 import { Icon } from "../../components/Icon";
@@ -164,6 +166,7 @@ function MovieExtras({
   cast: string | null;
 }) {
   const navigate = useNavigate();
+  const [person, setPerson] = useState<SheetPerson | null>(null);
   const related = useAsync(() => loadRelatedMovies(id, title), String(id));
   const carousel = useCarouselControls();
   const people = [
@@ -179,7 +182,11 @@ function MovieExtras({
           <h2 className="text-heading">Cast and crew</h2>
           <div className="flex [scrollbar-width:none] gap-5 overflow-x-auto" data-row="people">
             {people.map((person) => (
-              <PersonAvatar key={`${person.role ?? "cast"}:${person.name}`} {...person} />
+              <PersonAvatar
+                key={`${person.role ?? "cast"}:${person.name}`}
+                {...person}
+                onOpen={() => setPerson(person)}
+              />
             ))}
           </div>
         </section>
@@ -203,6 +210,7 @@ function MovieExtras({
           </Carousel>
         </section>
       )}
+      <PersonSheet person={person} from={{ kind: "vod", id }} onClose={() => setPerson(null)} />
     </div>
   );
 }
