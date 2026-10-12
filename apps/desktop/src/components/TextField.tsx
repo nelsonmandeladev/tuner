@@ -18,7 +18,7 @@ export function TextField({ id, label, mono = false, invalid = false, ...input }
       <input
         id={id}
         aria-invalid={invalid || undefined}
-        className={`h-12 min-w-0 rounded-field border bg-surface px-4 text-body text-text placeholder:text-text-placeholder focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:opacity-60 ${
+        className={`h-12 min-w-0 rounded-full border bg-surface px-5 text-body text-text placeholder:text-text-placeholder focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:opacity-60 ${
           invalid ? "border-live" : "border-line-strong"
         } ${mono ? "font-mono" : ""}`}
         {...input}

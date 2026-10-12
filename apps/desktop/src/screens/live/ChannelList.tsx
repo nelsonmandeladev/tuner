@@ -109,7 +109,7 @@ export function ChannelList({ onPick, onOpen, scrollRef }: ChannelListProps) {
           placeholder={`Filter ${categoryName}`}
           autoComplete="off"
           spellCheck={false}
-          className="h-11 min-w-0 flex-1 rounded-field border border-line-strong bg-surface px-4 text-small text-text placeholder:text-text-placeholder focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent [&::-webkit-search-cancel-button]:hidden"
+          className="h-11 min-w-0 flex-1 rounded-full border border-line-strong bg-surface px-5 text-small text-text placeholder:text-text-placeholder focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent [&::-webkit-search-cancel-button]:hidden"
         />
         {filter && (
           <button

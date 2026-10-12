@@ -69,9 +69,9 @@ Monospace is for anything that is a number the eye compares: channel numbers, ti
 
 ### Radius
 
-**Fully rounded (user review, 2026-10-12):** every button (primary, ghost, icon, the heart, Back, player menus, small icon buttons, the account button), sidebar nav items and their active/hover background, category items, segmented controls and tabs, track and segments both. The mockups' square-ish buttons and nav items are superseded.
+**Fully rounded (user review, 2026-10-12):** every button (primary, ghost, icon, the heart, Back, player menus, small icon buttons, the account button), text inputs (Connect fields, the channel filter; 20 px sides), sidebar nav items and their active/hover background, category items, segmented controls and tabs, track and segments both. The mockups' square-ish buttons and nav items are superseded.
 
-Other radii: `6` kbd hints · `8` chips on video, LIVE pill · `12` inputs, channel logos · `14` channel rows, search results · `16` posters, episode rows · `18` channel cards, preview player, panels · `24` hero.
+Other radii: `6` kbd hints · `8` chips on video, LIVE pill · `12` channel logos · `14` channel rows, search results · `16` posters, episode rows · `18` channel cards, preview player, panels · `24` hero.
 
 ### Spacing and sizes
 
