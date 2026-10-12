@@ -92,7 +92,7 @@ export function Player() {
 
   return (
     <div
-      className={`fixed inset-0 overflow-hidden text-text select-none ${visible ? "" : "cursor-none"}`}
+      className={`absolute inset-0 overflow-hidden text-text select-none ${visible ? "" : "cursor-none"}`}
       onMouseMove={wake}
       onDoubleClick={(event) => {
         if (

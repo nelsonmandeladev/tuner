@@ -1,5 +1,5 @@
 import { MotionConfig } from "motion/react";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Backdrop } from "../player/Backdrop";
 import { Player } from "../screens/Player";
@@ -12,6 +12,8 @@ import { MovieDetail } from "../screens/details/MovieDetail";
 import { SeriesDetail } from "../screens/details/SeriesDetail";
 import { GlobalSearch } from "../screens/search/GlobalSearch";
 import { Settings } from "../screens/Settings";
+import { TitleBar } from "../components/TitleBar";
+import { useFullscreen } from "../player/fullscreen";
 import { AppShell } from "./AppShell";
 import { RequireAccount } from "./RequireAccount";
 
@@ -19,46 +21,62 @@ import { RequireAccount } from "./RequireAccount";
 const PlayerDebug = import.meta.env.DEV ? lazy(() => import("../screens/debug/PlayerDebug")) : null;
 const DevAutorun = import.meta.env.DEV ? lazy(() => import("../screens/debug/DevAutorun")) : null;
 
+/**
+ * The window: our own title bar on top (the OS frame is off), the screens
+ * below it. In full screen (the player) the bar goes and the screen fills the window.
+ */
+function WindowFrame({ children }: { children: ReactNode }) {
+  const fullscreen = useFullscreen((s) => s.on);
+  return (
+    <div className="flex h-full flex-col">
+      {!fullscreen && <TitleBar />}
+      <div className="relative min-h-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
 export function App() {
   return (
     // "user": honour prefers-reduced-motion by dropping transforms, keeping opacity.
     <MotionConfig reducedMotion="user">
       <Backdrop />
       <BrowserRouter>
-        <PlaybackScope />
-        <GlobalSearch />
-        {DevAutorun && "__TAURI_INTERNALS__" in window && (
-          <Suspense>
-            <DevAutorun />
-          </Suspense>
-        )}
-        <Routes>
-          <Route path="connect" element={<Connect />} />
-          <Route element={<RequireAccount />}>
-            <Route element={<AppShell />}>
-              <Route index element={<Home />} />
-              <Route path="live" element={<LiveTV />} />
-              <Route path="movies" element={<Movies />} />
-              <Route path="movies/:id" element={<MovieDetail />} />
-              <Route path="series" element={<Series />} />
-              <Route path="series/:id" element={<SeriesDetail />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-            <Route path="watch" element={<Player />} />
-          </Route>
-          {PlayerDebug && (
-            <Route
-              path="debug/player"
-              element={
-                // The window is transparent (mpv draws under it): a frame that paints
-                // nothing shows the desktop, so the fallback paints the app background.
-                <Suspense fallback={<div className="h-full bg-bg" />}>
-                  <PlayerDebug />
-                </Suspense>
-              }
-            />
+        <WindowFrame>
+          <PlaybackScope />
+          <GlobalSearch />
+          {DevAutorun && "__TAURI_INTERNALS__" in window && (
+            <Suspense>
+              <DevAutorun />
+            </Suspense>
           )}
-        </Routes>
+          <Routes>
+            <Route path="connect" element={<Connect />} />
+            <Route element={<RequireAccount />}>
+              <Route element={<AppShell />}>
+                <Route index element={<Home />} />
+                <Route path="live" element={<LiveTV />} />
+                <Route path="movies" element={<Movies />} />
+                <Route path="movies/:id" element={<MovieDetail />} />
+                <Route path="series" element={<Series />} />
+                <Route path="series/:id" element={<SeriesDetail />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+              <Route path="watch" element={<Player />} />
+            </Route>
+            {PlayerDebug && (
+              <Route
+                path="debug/player"
+                element={
+                  // The window is transparent (mpv draws under it): a frame that paints
+                  // nothing shows the desktop, so the fallback paints the app background.
+                  <Suspense fallback={<div className="h-full bg-bg" />}>
+                    <PlayerDebug />
+                  </Suspense>
+                }
+              />
+            )}
+          </Routes>
+        </WindowFrame>
       </BrowserRouter>
     </MotionConfig>
   );
