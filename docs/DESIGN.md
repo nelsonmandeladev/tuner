@@ -82,7 +82,8 @@ Sidebar 248 wide · nav item 44 high · primary button 48 (52 on Connect) · ico
 
 | Component | Where | Notes |
 | --- | --- | --- |
-| `Sidebar` | All screens | Logo mark (three bars, last one accent and tallest), nav, ⌘K hint, Settings, account button (avatar letter on dark amber `#2A2418`) |
+| `TitleBar` | All screens but full screen | The window's own bar (the OS frame is off, M5 review): 40 high on `--bg-sidebar` with a `--line` rule below. Left: sidebar toggle, Back, Forward (round 28-px icon buttons; not on the player or Connect), then the logo mark and wordmark at small size. The rest drags the window; double-click maximizes. Right: minimize, maximize/restore, close as flush 46 × 40 caption buttons (Windows' shape, not pills), close turning `--window-close` red on hover |
+| `Sidebar` | All screens | Nav, ⌘K hint, Settings, account button (avatar letter on dark amber `#2A2418`). No logo since the M5 review (it moved to the title bar). Can be hidden completely (title bar toggle or Ctrl/⌘ + B): it slides to zero width (200 ms in, 150 ms out) and the choice is remembered |
 | `NavItem` | Sidebar | Icon 20 stroke 1.8 + label. Active: `--surface-active`, text `--text`, weight 600 |
 | `Button` | Everywhere | `primary` (accent fill, `--on-accent`), `ghost` (`--ghost`), `icon` (square, `aria-label` required) |
 | `SegmentedControl` | Connect, Series seasons | Track `--surface` + `--line` border, active segment `--surface-raised` |
