@@ -173,6 +173,31 @@ pub fn debug_m2_credentials() -> Result<Option<DevCredentials>, String> {
     }))
 }
 
+/// When the process started, for cold-start timings (`debug_process_ms`).
+static PROCESS_START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+
+/// Called first thing in `run()`.
+pub fn mark_process_start() {
+    PROCESS_START.get_or_init(std::time::Instant::now);
+}
+
+/// Milliseconds since the process started (the M5 suite times cold start to Home).
+#[tauri::command]
+pub fn debug_process_ms() -> f64 {
+    PROCESS_START
+        .get()
+        .map_or(-1.0, |start| start.elapsed().as_secs_f64() * 1000.0)
+}
+
+/// The M5 suite plan when the app was started with `TUNER_M5_SUITE` (see
+/// `screens/debug/m5Suite.ts`).
+#[tauri::command]
+pub fn debug_m5_suite() -> Option<String> {
+    std::env::var("TUNER_M5_SUITE")
+        .ok()
+        .filter(|v| !v.is_empty())
+}
+
 /// The M4 suite plan when the app was started with `TUNER_M4_SUITE`, e.g.
 /// `movie=1234,series=5678[,phase=restart]` (see `screens/debug/m4Suite.ts`).
 #[tauri::command]

@@ -8,6 +8,8 @@ mod streams;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(debug_assertions)]
+    debug_stream::mark_process_start();
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
@@ -30,7 +32,9 @@ pub fn run() {
         debug_stream::debug_autorun,
         debug_stream::debug_m2_credentials,
         debug_stream::debug_m3_suite,
-        debug_stream::debug_m4_suite
+        debug_stream::debug_m4_suite,
+        debug_stream::debug_m5_suite,
+        debug_stream::debug_process_ms
     ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![

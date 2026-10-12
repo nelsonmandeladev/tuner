@@ -125,13 +125,27 @@ export function prepareSearch(): Promise<void> {
   return preparing;
 }
 
-async function prepare() {
+/** Dev measurements only: builds and stores the index again, ignoring the stored one. */
+export async function rebuildSearch(): Promise<void> {
+  await preparing;
+  preparing = prepare({ rebuild: true }).finally(() => {
+    preparing = null;
+  });
+  return preparing;
+}
+
+async function prepare({ rebuild = false } = {}) {
   const { active, syncState } = useSession.getState();
   const db = activeLibrary();
   if (!active || !db || syncState.length === 0) return;
   const key = searchIndexKey(syncState);
   const current = get();
-  if (current.accountId === active.id && current.key === key && current.status === "ready") {
+  if (
+    !rebuild &&
+    current.accountId === active.id &&
+    current.key === key &&
+    current.status === "ready"
+  ) {
     await refreshHidden();
     return;
   }
@@ -141,7 +155,7 @@ async function prepare() {
     const t0 = performance.now();
     const stored = await invoke<ArrayBuffer>("search_index_read", { account: active.id });
     const readMs = performance.now() - t0;
-    if (stored.byteLength > 0) {
+    if (stored.byteLength > 0 && !rebuild) {
       const loaded = await ask({ type: "load", key, bytes: stored }, "loaded", [stored]);
       if (loaded.ok) {
         set({
