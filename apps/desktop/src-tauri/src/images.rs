@@ -7,6 +7,10 @@
 //! is LRU by file modification time, capped at 500 MB, and failed URLs are
 //! not retried for an hour so a dead logo host costs one request.
 //!
+//! At most six downloads run at once; the others wait their turn. Fast
+//! scrolling through a poster grid otherwise opened ~25 sockets to the logo
+//! host at a time (seen in M4).
+//!
 //! Only http(s) URLs with an `image/*` answer under 10 MB are accepted.
 //! Artwork URLs carry no credentials; nothing here is logged.
 
@@ -23,6 +27,7 @@ use std::{
 
 use tauri::{
     Manager, Runtime, UriSchemeContext, UriSchemeResponder,
+    async_runtime::{Mutex, Receiver, Sender, channel},
     http::{Request, Response, StatusCode, header},
 };
 use tauri_plugin_http::reqwest;
@@ -35,6 +40,9 @@ const EVICT_TO_BYTES: u64 = MAX_CACHE_BYTES * 9 / 10;
 const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 const MISS_TTL: Duration = Duration::from_secs(60 * 60);
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+
+/// Downloads running at once.
+const MAX_FETCHES: usize = 6;
 
 /// Check the cache size every this many writes (a directory scan is not free).
 const EVICT_EVERY_WRITES: u32 = 50;
@@ -122,7 +130,44 @@ async fn serve(dir: &Path, url: &str) -> Response<Vec<u8>> {
     }
 }
 
+/// A counting gate for downloads: a channel pre-filled with one token per
+/// slot. Taking a token waits for a free slot; dropping the permit returns it.
+struct Gate {
+    tokens: Mutex<Receiver<()>>,
+    returns: Sender<()>,
+}
+
+struct Permit(&'static Gate);
+
+impl Drop for Permit {
+    fn drop(&mut self) {
+        let _ = self.0.returns.try_send(());
+    }
+}
+
+fn gate() -> &'static Gate {
+    static GATE: OnceLock<Gate> = OnceLock::new();
+    GATE.get_or_init(|| {
+        let (returns, tokens) = channel(MAX_FETCHES);
+        for _ in 0..MAX_FETCHES {
+            let _ = returns.try_send(());
+        }
+        Gate {
+            tokens: Mutex::new(tokens),
+            returns,
+        }
+    })
+}
+
+async fn permit() -> Permit {
+    let gate = gate();
+    // The lock queues waiters in order; the one holding it waits for a token.
+    gate.tokens.lock().await.recv().await;
+    Permit(gate)
+}
+
 async fn fetch(url: &str) -> Option<(String, Vec<u8>)> {
+    let _permit = permit().await;
     let response = client()
         .get(url)
         .send()
@@ -252,6 +297,26 @@ mod tests {
             Some("http://img.example/a b.png")
         );
         assert_eq!(percent_decode("%zz"), None);
+    }
+
+    #[test]
+    fn downloads_wait_for_a_free_slot() {
+        tauri::async_runtime::block_on(async {
+            let returns = &gate().returns;
+            assert_eq!(returns.capacity(), 0, "every token waiting in the channel");
+            let permits: Vec<Permit> = futures_all(MAX_FETCHES).await;
+            assert_eq!(returns.capacity(), MAX_FETCHES, "all slots taken");
+            drop(permits);
+            assert_eq!(returns.capacity(), 0, "slots returned");
+        });
+    }
+
+    async fn futures_all(n: usize) -> Vec<Permit> {
+        let mut permits = Vec::new();
+        for _ in 0..n {
+            permits.push(permit().await);
+        }
+        permits
     }
 
     #[test]
