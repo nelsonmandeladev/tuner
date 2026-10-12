@@ -173,6 +173,11 @@ export async function writeAppSetting(key: string, value: string): Promise<void>
   await setSetting(await app(), key, value);
 }
 
+/** Dev checks only: app.db itself (the M6 suite adds and removes a test account). */
+export function appDatabase(): Promise<SqlAdapter> {
+  return app();
+}
+
 /** Dev checks only: channel logo URLs from the active library. */
 export async function sampleLiveIcons(limit: number): Promise<string[]> {
   return libraryDb ? readLiveIcons(libraryDb, limit) : [];
@@ -399,12 +404,15 @@ export async function editAccount(
   if (!server) return { ok: false, error: "invalid-server" };
   const username = form.username.trim();
   if (!username) return { ok: false, error: "missing-fields" };
-  if (accounts.some((a) => a.id !== id && a.server === server && a.username === username)) {
+  const otherLogin = server !== account.server || username !== account.username;
+  if (
+    otherLogin &&
+    accounts.some((a) => a.id !== id && a.server === server && a.username === username)
+  ) {
     return { ok: false, error: "duplicate" };
   }
 
-  const loginChanged =
-    server !== account.server || username !== account.username || form.password !== "";
+  const loginChanged = otherLogin || form.password !== "";
   let info: AccountInfo | null = null;
   if (loginChanged) {
     const password = form.password || (await keychain.get(secretKey(id)));

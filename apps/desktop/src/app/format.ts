@@ -101,3 +101,22 @@ export function languageName(code: string | null): string | null {
     return null;
   }
 }
+
+/** "just now", "12 min ago", "3 h ago", "2 days ago": when lists were last updated. */
+export function formatAgo(ms: number, now = Date.now()): string {
+  const minutes = Math.max(0, Math.floor((now - ms) / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} h ago`;
+  return `${Math.floor(hours / 24)} days ago`;
+}
+
+const sizes = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+
+/** "212 MB", "1.4 GB", "640 KB". */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1_000_000) return `${sizes.format(Math.round(bytes / 1000))} KB`;
+  if (bytes < 1_000_000_000) return `${sizes.format(Math.round(bytes / 1_000_000))} MB`;
+  return `${sizes.format(bytes / 1_000_000_000)} GB`;
+}
