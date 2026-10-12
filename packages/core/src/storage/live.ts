@@ -135,6 +135,14 @@ export async function setCategoryHidden(
   }
 }
 
+/** Every hidden category as `kind:id` (search leaves out what only they list). */
+export async function readHiddenCategories(db: SqlAdapter): Promise<string[]> {
+  const rows = await db.select<{ kind: string; id: string }>(
+    "SELECT kind, id FROM hidden_categories",
+  );
+  return rows.map((r) => `${r.kind}:${r.id}`);
+}
+
 /** Cached schedules fetched at or after `freshAfter`, by stream id. */
 export async function readEpgCache(
   db: SqlAdapter,

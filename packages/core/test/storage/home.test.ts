@@ -6,6 +6,7 @@ import {
   replaceVod,
 } from "../../src/storage/library";
 import {
+  readHiddenCategories,
   readLiveChannelsByIds,
   readRecentChannels,
   setCategoryHidden,
@@ -120,6 +121,7 @@ describe("home reads", () => {
     expect((await readRecentVod(db, 2)).map((m) => m.id)).toEqual([11, 12]);
     await setCategoryHidden(db, "vod", "m2", true);
     expect((await readRecentVod(db, 10)).map((m) => m.id)).toEqual([12, 10]);
+    expect(await readHiddenCategories(db)).toEqual(["vod:m2"]);
     expect((await readRecentSeries(db, 10)).map((s) => s.id)).toEqual([21, 20]);
   });
 
