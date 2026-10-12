@@ -1,3 +1,4 @@
+mod accounts;
 mod db;
 #[cfg(debug_assertions)]
 mod debug_stream;
@@ -21,6 +22,10 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db::db_batch,
+        accounts::account_db_unload,
+        accounts::account_remove,
+        accounts::image_cache_size,
+        accounts::image_cache_clear,
         secrets::secret_get,
         secrets::secret_set,
         secrets::secret_delete,
@@ -34,11 +39,18 @@ pub fn run() {
         debug_stream::debug_m3_suite,
         debug_stream::debug_m4_suite,
         debug_stream::debug_m5_suite,
+        debug_stream::debug_m6_suite,
+        debug_stream::debug_m6_credentials,
+        accounts::debug_account_traces,
         debug_stream::debug_process_ms
     ]);
     #[cfg(not(debug_assertions))]
     let builder = builder.invoke_handler(tauri::generate_handler![
         db::db_batch,
+        accounts::account_db_unload,
+        accounts::account_remove,
+        accounts::image_cache_size,
+        accounts::image_cache_clear,
         secrets::secret_get,
         secrets::secret_set,
         secrets::secret_delete,

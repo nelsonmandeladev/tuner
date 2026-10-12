@@ -29,6 +29,17 @@ pub(crate) fn account_password<R: Runtime>(
     }
 }
 
+/// Deletes an account's password (account removal, `accounts.rs`). A missing entry is fine.
+pub(crate) fn delete_account_password<R: Runtime>(
+    app: &AppHandle<R>,
+    account_id: &str,
+) -> Result<(), String> {
+    match entry(app, &format!("xtream:{account_id}"))?.delete_credential() {
+        Ok(()) | Err(Error::NoEntry) => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 #[tauri::command]
 pub fn secret_get<R: Runtime>(app: AppHandle<R>, key: String) -> Result<Option<String>, String> {
     match entry(&app, &key)?.get_password() {

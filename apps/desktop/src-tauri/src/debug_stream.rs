@@ -165,6 +165,20 @@ pub fn debug_m2_credentials() -> Result<Option<DevCredentials>, String> {
     if std::env::var("TUNER_M2_SUITE").ok().as_deref() != Some("1") {
         return Ok(None);
     }
+    dev_credentials()
+}
+
+/// The .env.local account for the M6 suite (`TUNER_M6_SUITE`), which adds and
+/// edits accounts with it through the real Settings code.
+#[tauri::command]
+pub fn debug_m6_credentials() -> Result<Option<DevCredentials>, String> {
+    if debug_m6_suite().is_none() {
+        return Ok(None);
+    }
+    dev_credentials()
+}
+
+fn dev_credentials() -> Result<Option<DevCredentials>, String> {
     let account = Account::load()?;
     Ok(Some(DevCredentials {
         server: account.server,
@@ -187,6 +201,15 @@ pub fn debug_process_ms() -> f64 {
     PROCESS_START
         .get()
         .map_or(-1.0, |start| start.elapsed().as_secs_f64() * 1000.0)
+}
+
+/// The M6 suite plan when the app was started with `TUNER_M6_SUITE` (see
+/// `screens/debug/m6Suite.ts`).
+#[tauri::command]
+pub fn debug_m6_suite() -> Option<String> {
+    std::env::var("TUNER_M6_SUITE")
+        .ok()
+        .filter(|v| !v.is_empty())
 }
 
 /// The M5 suite plan when the app was started with `TUNER_M5_SUITE` (see
