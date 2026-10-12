@@ -10,7 +10,7 @@ export function Sidebar() {
   return (
     <nav
       aria-label="Main"
-      className="flex h-full w-62 flex-none flex-col gap-7 border-r border-line bg-bg-sidebar px-4 pt-5 pb-5"
+      className="flex h-full w-62 flex-none flex-col gap-7 border-r border-line bg-bg-sidebar px-4 pt-15 pb-5"
     >
       <div className="flex flex-col gap-1">
         {mainRoutes.map((route) => (

@@ -13,7 +13,13 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router";
 import { shortcutLabel } from "../app/platform";
-import { SIDEBAR_WIDTH, sidebarTransition, toggleSidebar, useLayout } from "../app/layout";
+import {
+  runsUnderTitleBar,
+  SIDEBAR_WIDTH,
+  sidebarTransition,
+  toggleSidebar,
+  useLayout,
+} from "../app/layout";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 
@@ -32,13 +38,18 @@ export function TitleBar() {
   const bare = BARE_ROUTES.some((route) => pathname.startsWith(route));
   const sidebarOpen = useLayout((s) => s.sidebarOpen);
   const reduceMotion = useReducedMotion();
+  const underBar = runsUnderTitleBar(pathname);
+  const scrolled = useLayout((s) => s.underBarScrolled);
   const history = useHistoryEnds();
   const navigate = useNavigate();
 
   return (
     <header
       data-tauri-drag-region
-      className="relative isolate flex h-10 flex-none items-center gap-1 pl-2 text-text select-none"
+      className={`isolate flex h-10 flex-none items-center gap-1 pl-2 text-text transition-colors duration-(--duration-in) ease-out select-none ${
+        // On sidebar screens the bar floats over the content (detail heroes run up under it).
+        bare ? "relative" : "absolute inset-x-0 top-0 z-20"
+      } ${underBar && scrolled ? "bg-bg" : ""}`}
       data-titlebar
     >
       {/* Over the sidebar the bar takes its colour and its right border runs on up,

@@ -28,7 +28,7 @@ export function Hero({ name, backdrop, backLabel, onBack, poster, children }: He
   const showPoster = !showBackdrop && posterSrc && !failed.includes(posterSrc);
 
   return (
-    <section className="relative flex min-h-100 overflow-hidden" data-hero>
+    <section className="relative flex min-h-110 overflow-hidden" data-hero>
       {showBackdrop ? (
         <img
           src={backdropSrc}
@@ -41,15 +41,17 @@ export function Hero({ name, backdrop, backLabel, onBack, poster, children }: He
       )}
       <div className="absolute inset-0 bg-(image:--scrim-hero)" />
       <div className="absolute inset-x-0 bottom-0 h-30 bg-(image:--scrim-hero-bottom)" />
+      {/* The artwork runs up under the title bar: a light shade keeps its buttons readable. */}
+      <div className="absolute inset-x-0 top-0 h-20 bg-(image:--scrim-titlebar)" />
       {showPoster && (
         <img
           src={posterSrc}
           alt=""
-          className="absolute top-8 right-12 bottom-9 hidden aspect-[2/3] rounded-poster object-cover xl:block"
+          className="absolute top-18 right-12 bottom-9 hidden aspect-[2/3] rounded-poster object-cover xl:block"
           onError={() => setFailed((f) => [...f, posterSrc])}
         />
       )}
-      <div className="relative flex w-full max-w-170 flex-col justify-between gap-8 px-12 pt-8 pb-9">
+      <div className="relative flex w-full max-w-170 flex-col justify-between gap-8 px-12 pt-18 pb-9">
         <button
           type="button"
           onClick={onBack}

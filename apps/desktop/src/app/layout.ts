@@ -19,7 +19,14 @@ export function sidebarTransition(open: boolean, reduceMotion: boolean | null) {
     : ({ duration: 0.15, ease: "easeIn" } as const);
 }
 
-export const useLayout = create<{ sidebarOpen: boolean }>(() => ({ sidebarOpen: true }));
+export const useLayout = create<{
+  sidebarOpen: boolean;
+  /** A page that runs under the title bar (detail heroes) has been scrolled: the bar gets its background. */
+  underBarScrolled: boolean;
+}>(() => ({ sidebarOpen: true, underBarScrolled: false }));
+
+/** Pages whose artwork runs up under the title bar (M5 review): movie and series details. */
+export const runsUnderTitleBar = (pathname: string) => /^\/(movies|series)\/[^/]+/.test(pathname);
 
 /** Reads the remembered layout (once, at start). */
 export async function loadLayout() {
