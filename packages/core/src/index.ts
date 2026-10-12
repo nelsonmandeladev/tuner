@@ -16,3 +16,4 @@ export * from "./live";
 export * from "./vod";
 export { ART_PALETTE_SIZE, artIndex, artLayout, monogram } from "./art";
 export { foldText } from "./text";
+export * from "./search";
