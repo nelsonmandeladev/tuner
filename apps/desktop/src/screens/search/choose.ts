@@ -28,5 +28,8 @@ export async function chooseResult(hit: SearchHit, navigate: NavigateFunction, p
     return;
   }
   if (inPlayer) await exitPlayer();
-  void navigate(hit.kind === "vod" ? `/movies/${hit.id}` : `/series/${hit.id}`);
+  // From the player the page takes the player's place in the history, so Back skips it.
+  void navigate(hit.kind === "vod" ? `/movies/${hit.id}` : `/series/${hit.id}`, {
+    replace: inPlayer,
+  });
 }

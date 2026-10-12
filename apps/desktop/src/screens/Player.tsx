@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useNavigate, useNavigationType } from "react-router";
 import { hasModKey } from "../app/platform";
 import { GeneratedArt } from "../components/GeneratedArt";
 import { Toast } from "../components/Toast";
 import { wantEpg } from "../data/epg";
 import { seekBy, setVolume, togglePause } from "../player/controller";
-import { leavePlayer, toggleFullscreen } from "../player/fullscreen";
+import { leavePlayer, playerFallback, toggleFullscreen } from "../player/fullscreen";
 import { usePlayer } from "../player/store";
 import {
   cancelDigits,
@@ -59,6 +59,9 @@ export function Player() {
   const [stats, setStats] = useState(false);
   const [menu, setMenu] = useState<PlayerMenu>(null);
   const channel = channelOf(channelId);
+  // Reached by Back or Forward: the stream it showed has stopped; go to its page instead.
+  const navigationType = useNavigationType();
+  const [byHistory] = useState(() => navigationType === "POP");
 
   const pinned = guide || menu !== null || status === "error" || upNext !== null;
   const { visible, wake } = useAutoHide(pinned);
@@ -84,6 +87,7 @@ export function Player() {
 
   usePlayerKeys({ guide, setGuide, setStats, menu, setMenu, back, wake });
 
+  if (byHistory) return <Navigate to={playerFallback()} replace />;
   const vod = mode === "vod" ? media : null;
   if (mode === "vod" ? !vod : !channel) {
     return <Navigate to={mode === "vod" ? "/movies" : "/live"} replace />;
