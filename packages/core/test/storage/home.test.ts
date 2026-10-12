@@ -16,6 +16,7 @@ import { accountMigrations } from "../../src/storage/migrations";
 import {
   readEpisodes,
   readInProgress,
+  readRelatedVod,
   readRecentSeries,
   readRecentVod,
   recordHistory,
@@ -123,6 +124,32 @@ describe("home reads", () => {
     expect((await readRecentVod(db, 10)).map((m) => m.id)).toEqual([12, 10]);
     expect(await readHiddenCategories(db)).toEqual(["vod:m2"]);
     expect((await readRecentSeries(db, 10)).map((s) => s.id)).toEqual([21, 20]);
+  });
+
+  it("finds movies that share the most categories, outside hidden ones", async () => {
+    const db = await library();
+    await db.transaction(async (tx) => {
+      replaceCategories(tx, "vod", [
+        { id: "m1", name: "Drama", parentId: null },
+        { id: "m2", name: "Other", parentId: null },
+        { id: "m3", name: "Third", parentId: null },
+      ]);
+      replaceVod(tx, [
+        { ...movie(10, 1), categoryId: "m1" },
+        { ...movie(10, 1), categoryId: "m2" },
+        { ...movie(11, 2), categoryId: "m1", rating: 5 },
+        { ...movie(12, 3), categoryId: "m1", rating: 8 },
+        { ...movie(12, 3), categoryId: "m2", rating: 8 },
+        { ...movie(13, 4), categoryId: "m2", rating: 9 },
+        { ...movie(14, 5), categoryId: "m3", rating: 9 },
+      ]);
+    });
+    // 12 shares two categories; then 13 (9) before 11 (5); 14 shares none.
+    expect((await readRelatedVod(db, 10, 10)).map((m) => m.id)).toEqual([12, 13, 11]);
+    expect((await readRelatedVod(db, 10, 1)).map((m) => m.id)).toEqual([12]);
+    await setCategoryHidden(db, "vod", "m2", true);
+    expect((await readRelatedVod(db, 10, 10)).map((m) => m.id)).toEqual([12, 11]);
+    expect(await readRelatedVod(db, 99, 10)).toEqual([]);
   });
 
   it("lists movies and episodes in progress, one per series, newest first", async () => {

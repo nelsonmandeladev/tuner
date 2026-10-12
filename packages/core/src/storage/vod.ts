@@ -62,6 +62,47 @@ export function readRecentVod(db: SqlAdapter, limit: number): Promise<VodItem[]>
   );
 }
 
+/**
+ * Movies like this one, for its detail page: those sharing the most of its
+ * categories (the list API has no genre), then the best rated, then the
+ * newest. Hidden categories do not count. The same film listed again (another
+ * quality, another language) is the caller's to merge by title.
+ */
+export async function readRelatedVod(
+  db: SqlAdapter,
+  id: number,
+  limit: number,
+): Promise<VodItem[]> {
+  const rows = await db.select<{
+    id: number;
+    name: string;
+    icon: string | null;
+    rating: number | null;
+    added_at: number | null;
+    ext: string;
+  }>(
+    `SELECT v.id, v.name, v.icon, v.rating, v.added_at, v.ext
+     FROM category_items mine
+     JOIN category_items other
+       ON other.kind = 'vod' AND other.category_id = mine.category_id AND other.item_id <> mine.item_id
+     JOIN vod v ON v.id = other.item_id
+     WHERE mine.kind = 'vod' AND mine.item_id = ?
+       AND NOT EXISTS (SELECT 1 FROM hidden_categories h WHERE h.kind = 'vod' AND h.id = other.category_id)
+     GROUP BY v.id
+     ORDER BY COUNT(*) DESC, v.rating IS NULL, v.rating DESC, v.added_at DESC, v.position
+     LIMIT ?`,
+    [id, limit],
+  );
+  return rows.map((r) => ({
+    id: Number(r.id),
+    name: r.name,
+    icon: r.icon,
+    rating: num(r.rating),
+    addedAt: num(r.added_at),
+    ext: r.ext,
+  }));
+}
+
 /** The most recently updated series (`last_modified`), outside hidden categories. */
 export function readRecentSeries(db: SqlAdapter, limit: number): Promise<SeriesItem[]> {
   return selectSeries(
