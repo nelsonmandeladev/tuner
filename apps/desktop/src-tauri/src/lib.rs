@@ -2,6 +2,7 @@ mod db;
 #[cfg(debug_assertions)]
 mod debug_stream;
 mod images;
+mod search_store;
 mod secrets;
 mod streams;
 
@@ -22,6 +23,8 @@ pub fn run() {
         secrets::secret_set,
         secrets::secret_delete,
         streams::stream_load,
+        search_store::search_index_read,
+        search_store::search_index_write,
         debug_stream::debug_stream_load,
         debug_stream::debug_trace,
         debug_stream::debug_autorun,
@@ -35,7 +38,9 @@ pub fn run() {
         secrets::secret_get,
         secrets::secret_set,
         secrets::secret_delete,
-        streams::stream_load
+        streams::stream_load,
+        search_store::search_index_read,
+        search_store::search_index_write
     ]);
 
     builder
