@@ -521,7 +521,11 @@ export async function readPersonCredits(db: SqlAdapter, person: string): Promise
     } catch {
       continue;
     }
-    const role = credits(info.director, folded) ? "director" : credits(info.cast, folded) ? "cast" : null;
+    const role = credits(info.director, folded)
+      ? "director"
+      : credits(info.cast, folded)
+        ? "cast"
+        : null;
     if (role) {
       found.push({
         kind: "vod",
@@ -534,7 +538,11 @@ export async function readPersonCredits(db: SqlAdapter, person: string): Promise
     }
   }
   for (const s of series) {
-    const role = credits(s.director, folded) ? "director" : credits(s.cast_names, folded) ? "cast" : null;
+    const role = credits(s.director, folded)
+      ? "director"
+      : credits(s.cast_names, folded)
+        ? "cast"
+        : null;
     if (role) {
       found.push({
         kind: "series",
