@@ -95,9 +95,9 @@ export function CarouselArrows({
       aria-label={direction < 0 ? `Previous ${label}` : `Next ${label}`}
       disabled={direction < 0 ? !controls.canBack : !controls.canForward}
       onClick={() => controls.page(direction)}
-      className="flex size-8 items-center justify-center rounded-full border border-line-strong bg-surface text-text transition-colors duration-(--duration-hover) ease-out hover:bg-surface-raised disabled:cursor-default disabled:opacity-40 disabled:hover:bg-surface"
+      className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-surface text-text transition-colors duration-(--duration-hover) ease-out hover:bg-surface-raised disabled:cursor-default disabled:opacity-40 disabled:hover:bg-surface"
     >
-      <Icon icon={direction < 0 ? ArrowLeft01Icon : ArrowRight01Icon} size={16} />
+      <Icon icon={direction < 0 ? ArrowLeft01Icon : ArrowRight01Icon} size={18} />
     </button>
   );
   return (
