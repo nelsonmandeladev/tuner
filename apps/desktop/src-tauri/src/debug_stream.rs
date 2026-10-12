@@ -173,6 +173,15 @@ pub fn debug_m2_credentials() -> Result<Option<DevCredentials>, String> {
     }))
 }
 
+/// The M4 suite plan when the app was started with `TUNER_M4_SUITE`, e.g.
+/// `movie=1234,series=5678[,phase=restart]` (see `screens/debug/m4Suite.ts`).
+#[tauri::command]
+pub fn debug_m4_suite() -> Option<String> {
+    std::env::var("TUNER_M4_SUITE")
+        .ok()
+        .filter(|v| !v.is_empty())
+}
+
 /// The M3 suite plan when the app was started with `TUNER_M3_SUITE`, e.g.
 /// `live=1234,archive=1240`: stream ids from the synced library. The Live TV
 /// screen then runs the suite by itself (see `screens/debug/m3Suite.ts`).

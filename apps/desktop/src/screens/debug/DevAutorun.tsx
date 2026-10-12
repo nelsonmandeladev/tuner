@@ -5,10 +5,12 @@ import { devAutorunPlan } from "./autorun";
 import { debugTrace } from "./debugSource";
 import { runM2Suite, type DevCredentials } from "./m2Suite";
 import { parseM3Plan, runM3Suite } from "./m3Suite";
+import { parseM4Plan, runM4Suite } from "./m4Suite";
 import { useSession } from "../../data/session";
 
 const STARTED_KEY = "tuner.m2SuiteStarted";
 const M3_STARTED_KEY = "tuner.m3SuiteStarted";
+const M4_STARTED_KEY = "tuner.m4SuiteStarted";
 
 /**
  * Dev only, rendered at the router root: starts the acceptance suites the app
@@ -42,6 +44,18 @@ export default function DevAutorun() {
         await new Promise((r) => setTimeout(r, 100));
       if (cancelled || once(M3_STARTED_KEY)) return;
       void runM3Suite(plan, navigate, debugTrace);
+    });
+    void invoke<string | null>("debug_m4_suite").then(async (value) => {
+      if (cancelled || !value) return;
+      const plan = parseM4Plan(value);
+      if (!plan) {
+        debugTrace("TUNER_M4_SUITE is set but not a valid plan (movie=…,series=…)");
+        return;
+      }
+      while (useSession.getState().phase === "booting")
+        await new Promise((r) => setTimeout(r, 100));
+      if (cancelled || once(M4_STARTED_KEY)) return;
+      void runM4Suite(plan, navigate, debugTrace);
     });
     return () => {
       cancelled = true;
