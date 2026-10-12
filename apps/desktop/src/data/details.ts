@@ -8,7 +8,9 @@
 import {
   loadSeriesInfo,
   loadVodInfo,
+  foldText,
   readAccountPref,
+  readRelatedVod,
   readResume,
   readSeriesItem,
   readVodItem,
@@ -19,6 +21,7 @@ import {
   type VodInfo,
   type VodItem,
 } from "@tuner/core";
+import { posterFromVod, type PosterItem } from "./catalog";
 import { loadFavorites } from "./favorites";
 import { activeClient, activeLibrary } from "./session";
 
@@ -87,4 +90,27 @@ export async function readAutoplayNext(): Promise<boolean> {
 export async function writeAutoplayNext(on: boolean) {
   const db = activeLibrary();
   if (db) await writeAccountPref(db, PREF_AUTOPLAY, on);
+}
+
+/** Posters in a movie's "More like this" row. */
+export const RELATED_MOVIES = 18;
+
+/**
+ * Movies like this one (shared categories, best rated first), one poster per
+ * title: providers list the same film again in other qualities or languages.
+ */
+export async function loadRelatedMovies(id: number, title: string): Promise<PosterItem[]> {
+  const db = activeLibrary();
+  if (!db) return [];
+  const seen = new Set([foldText(title)]);
+  const related: PosterItem[] = [];
+  for (const movie of await readRelatedVod(db, id, RELATED_MOVIES * 3)) {
+    const poster = posterFromVod(movie);
+    const key = foldText(poster.title);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    related.push(poster);
+    if (related.length === RELATED_MOVIES) break;
+  }
+  return related;
 }

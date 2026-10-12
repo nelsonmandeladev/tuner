@@ -4,11 +4,15 @@ import { useNavigate, useParams } from "react-router";
 import { formatPosition } from "../../app/format";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
+import { Carousel, CarouselArrows } from "../../components/Carousel";
 import { FavoriteButton } from "../../components/FavoriteButton";
+import { PersonAvatar } from "../../components/PersonAvatar";
+import { PosterCard } from "../../components/PosterCard";
+import { useCarouselControls } from "../../hooks/useCarouselControls";
 import { Icon } from "../../components/Icon";
 import { ProgressBar } from "../../components/ProgressBar";
 import { Screen } from "../../components/Screen";
-import { loadMovie, type MovieDetail as Detail } from "../../data/details";
+import { loadMovie, loadRelatedMovies, type MovieDetail as Detail } from "../../data/details";
 import { useAsync } from "../../hooks/useAsync";
 import { enterPlayer } from "../../player/fullscreen";
 import { playVod } from "../../player/tuner";
@@ -121,25 +125,86 @@ function MovieView({ detail, onBack }: { detail: Detail; onBack: () => void }) {
         </div>
       </Hero>
 
-      {(info?.director || info?.cast) && (
-        <section
-          aria-label="Credits"
-          className="grid max-w-200 grid-cols-[auto_1fr] gap-x-8 gap-y-3 px-12 pt-2 pb-12 text-small"
-        >
-          {info.director && (
-            <>
-              <span className="text-text-dim">Director</span>
-              <span className="text-text-2">{info.director}</span>
-            </>
-          )}
-          {info.cast && (
-            <>
-              <span className="text-text-dim">Cast</span>
-              <span className="text-text-2">{info.cast}</span>
-            </>
-          )}
+      <MovieExtras
+        id={item.id}
+        title={title}
+        director={info?.director ?? null}
+        cast={info?.cast ?? null}
+      />
+    </div>
+  );
+}
+
+/** Names from the provider's comma-separated credits, in order, without repeats. */
+function names(list: string | null, max: number): string[] {
+  if (!list) return [];
+  return [
+    ...new Set(
+      list
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean),
+    ),
+  ].slice(0, max);
+}
+
+/**
+ * Below the hero (M5 review): the director and cast as avatars, then movies
+ * like this one in a carousel. Either part is left out when it has nothing.
+ */
+function MovieExtras({
+  id,
+  title,
+  director,
+  cast,
+}: {
+  id: number;
+  title: string;
+  director: string | null;
+  cast: string | null;
+}) {
+  const navigate = useNavigate();
+  const related = useAsync(() => loadRelatedMovies(id, title), String(id));
+  const carousel = useCarouselControls();
+  const people = [
+    ...names(director, 2).map((name) => ({ name, role: "Director" })),
+    ...names(cast, 20).map((name) => ({ name, role: undefined })),
+  ];
+  const posters = related.status === "ready" ? (related.value ?? []) : [];
+
+  return (
+    <div className="flex flex-col gap-10 px-12 pt-2 pb-12">
+      {people.length > 0 && (
+        <section aria-label="Cast and crew" className="flex flex-col gap-4">
+          <h2 className="text-heading">Cast and crew</h2>
+          <div className="flex [scrollbar-width:none] gap-5 overflow-x-auto" data-row="people">
+            {people.map((person) => (
+              <PersonAvatar key={`${person.role ?? "cast"}:${person.name}`} {...person} />
+            ))}
+          </div>
+        </section>
+      )}
+      {posters.length > 0 && (
+        <section aria-label="More like this" className="flex flex-col gap-4">
+          <span className="flex items-center gap-4">
+            <h2 className="text-heading">More like this</h2>
+            <CarouselArrows controls={carousel.controls} label="similar movies" />
+          </span>
+          <Carousel perPage={6} row="related-movies" onControls={carousel.onControls}>
+            {posters.map((poster) => (
+              <PosterCard
+                key={poster.id}
+                item={poster}
+                focused
+                onOpen={(movieId) => void navigate(`/movies/${movieId}`)}
+                onFocus={noop}
+              />
+            ))}
+          </Carousel>
         </section>
       )}
     </div>
   );
 }
+
+const noop = () => undefined;
