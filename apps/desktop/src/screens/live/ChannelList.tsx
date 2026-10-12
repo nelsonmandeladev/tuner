@@ -116,7 +116,7 @@ export function ChannelList({ onPick, onOpen, scrollRef }: ChannelListProps) {
             type="button"
             aria-label="Clear filter"
             onClick={() => setFilter("")}
-            className="absolute right-2 flex size-8 items-center justify-center rounded-chip text-text-muted hover:text-text"
+            className="absolute right-2 flex size-8 items-center justify-center rounded-full text-text-muted hover:text-text"
           >
             <Icon icon={Cancel01Icon} size={16} />
           </button>

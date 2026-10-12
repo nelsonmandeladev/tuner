@@ -11,7 +11,7 @@ interface NavItemProps {
 
 const itemClass = (active: boolean) =>
   [
-    "flex h-11 items-center gap-3 rounded-field px-3 text-body transition-colors duration-(--duration-hover) ease-out",
+    "flex h-11 items-center gap-3 rounded-full px-4 text-body transition-colors duration-(--duration-hover) ease-out",
     active
       ? "bg-surface-active font-semibold text-text"
       : "font-medium text-text-muted hover:bg-surface hover:text-text-2",

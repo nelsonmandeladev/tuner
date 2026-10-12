@@ -157,7 +157,7 @@ function PreviewVideo({ channel }: { channel: LiveChannel }) {
           <button
             type="button"
             onClick={retry}
-            className="h-9 flex-none rounded-control bg-ghost px-3 text-caption font-semibold text-text hover:bg-ghost-strong"
+            className="h-9 flex-none rounded-full bg-ghost px-3 text-caption font-semibold text-text hover:bg-ghost-strong"
           >
             Try again
           </button>

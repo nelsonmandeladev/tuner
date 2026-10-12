@@ -64,7 +64,7 @@ export function CategoryList({
       data-pane="categories"
       className="flex min-h-0 flex-col border-r border-line px-3 pt-7"
     >
-      <h2 className="mb-3 px-3 text-eyebrow-s text-text-faint uppercase">Categories</h2>
+      <h2 className="mb-3 px-4 text-eyebrow-s text-text-faint uppercase">Categories</h2>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto pb-6" role="list">
         <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((row) => {
@@ -88,7 +88,7 @@ export function CategoryList({
                     type="button"
                     aria-expanded={showHidden}
                     onClick={() => setShowHidden((v) => !v)}
-                    className="mt-2 flex h-9 w-full items-center gap-2 rounded-control px-3 text-left text-caption font-medium text-text-dim transition-colors duration-(--duration-hover) hover:text-text-2"
+                    className="mt-2 flex h-9 w-full items-center gap-2 rounded-full px-3 text-left text-caption font-medium text-text-dim transition-colors duration-(--duration-hover) hover:text-text-2"
                   >
                     <Icon icon={showHidden ? ArrowUp01Icon : ArrowDown01Icon} size={16} />
                     Hidden
@@ -124,7 +124,7 @@ function CategoryItem({
         aria-current={active || undefined}
         disabled={hidden}
         onClick={() => onSelect(id)}
-        className={`flex h-10 w-full items-center justify-between gap-2 rounded-control px-3 text-left text-small transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
+        className={`flex h-10 w-full items-center justify-between gap-2 rounded-full px-4 text-left text-small transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
           active
             ? "bg-surface-active font-semibold text-text"
             : hidden
@@ -151,7 +151,7 @@ function CategoryItem({
           aria-label={hidden ? `Show ${name}` : `Hide ${name}`}
           title={hidden ? "Show category" : "Hide category"}
           onClick={() => onSetHidden(id, !hidden)}
-          className={`absolute top-1 right-1 flex size-8 items-center justify-center rounded-chip text-text-muted transition-opacity duration-(--duration-hover) hover:bg-surface-raised hover:text-text focus-visible:opacity-100 ${
+          className={`absolute top-1 right-1 flex size-8 items-center justify-center rounded-full text-text-muted transition-opacity duration-(--duration-hover) hover:bg-surface-raised hover:text-text focus-visible:opacity-100 ${
             hidden
               ? "opacity-100"
               : "opacity-0 group-focus-within:opacity-100 group-hover:opacity-100"

@@ -30,7 +30,7 @@ export function IconButton({
     <button
       type="button"
       className={`flex flex-none items-center justify-center text-text transition-colors duration-(--duration-hover) ease-out ${
-        size === 48 ? "size-12 rounded-button" : "size-11 rounded-field"
+        size === 48 ? "size-12 rounded-full" : "size-11 rounded-full"
       } ${look} ${className}`}
       {...button}
     >

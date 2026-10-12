@@ -20,9 +20,9 @@ export function AccountButton() {
       <button
         type="button"
         onClick={() => void navigate("/connect")}
-        className="flex items-center gap-3 rounded-button border border-line bg-surface px-3 py-2.5 text-left text-text transition-colors duration-(--duration-hover) ease-out hover:border-line-strong"
+        className="flex items-center gap-3 rounded-full border border-line bg-surface px-3 py-2.5 text-left text-text transition-colors duration-(--duration-hover) ease-out hover:border-line-strong"
       >
-        <span className="flex size-8 flex-none items-center justify-center rounded-control bg-avatar text-accent">
+        <span className="flex size-8 flex-none items-center justify-center rounded-full bg-avatar text-accent">
           <Icon icon={PlusSignIcon} size={16} />
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
@@ -41,9 +41,9 @@ export function AccountButton() {
   return (
     <button
       type="button"
-      className="flex items-center gap-3 rounded-button border border-line bg-surface px-3 py-2.5 text-left text-text transition-colors duration-(--duration-hover) ease-out hover:border-line-strong"
+      className="flex items-center gap-3 rounded-full border border-line bg-surface px-3 py-2.5 text-left text-text transition-colors duration-(--duration-hover) ease-out hover:border-line-strong"
     >
-      <span className="flex size-8 flex-none items-center justify-center rounded-control bg-avatar font-display text-small text-accent">
+      <span className="flex size-8 flex-none items-center justify-center rounded-full bg-avatar font-display text-small text-accent">
         {active.name.trim().charAt(0).toUpperCase() || "?"}
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">

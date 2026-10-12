@@ -100,12 +100,12 @@ function ConnectForm({ onConnected }: { onConnected: () => void }) {
         <p className="text-body text-text-muted">Use your Xtream Codes login.</p>
       </div>
 
-      <div className="flex gap-1 rounded-button border border-line bg-surface p-1" role="tablist">
+      <div className="flex gap-1 rounded-full border border-line bg-surface p-1" role="tablist">
         <button
           type="button"
           role="tab"
           aria-selected
-          className="h-10 flex-1 rounded-control bg-surface-raised text-small font-semibold text-text"
+          className="h-10 flex-1 rounded-full bg-surface-raised text-small font-semibold text-text"
         >
           Xtream Codes
         </button>
@@ -114,7 +114,7 @@ function ConnectForm({ onConnected }: { onConnected: () => void }) {
           role="tab"
           aria-selected={false}
           disabled
-          className="h-10 flex-1 rounded-control text-small text-text-dim"
+          className="h-10 flex-1 rounded-full text-small text-text-dim"
         >
           M3U playlist · later
         </button>

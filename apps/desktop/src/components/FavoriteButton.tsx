@@ -29,7 +29,7 @@ export function FavoriteButton({ kind, id, name, tone = "surface" }: FavoriteBut
       aria-pressed={favorite}
       data-favorite
       onClick={() => void toggleFavorite(kind, id)}
-      className={`flex size-12 flex-none items-center justify-center rounded-button transition-colors duration-(--duration-hover) ease-out ${
+      className={`flex size-12 flex-none items-center justify-center rounded-full transition-colors duration-(--duration-hover) ease-out ${
         tone === "surface"
           ? "border border-line-strong bg-surface hover:bg-surface-raised"
           : "bg-ghost hover:bg-ghost-strong"

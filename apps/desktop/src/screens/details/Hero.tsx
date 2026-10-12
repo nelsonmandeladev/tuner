@@ -53,7 +53,7 @@ export function Hero({ name, backdrop, backLabel, onBack, poster, children }: He
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-9 items-center gap-2 self-start rounded-control bg-ghost-soft pr-3.5 pl-2.5 text-small font-medium text-text transition-colors duration-(--duration-hover) hover:bg-ghost"
+          className="inline-flex h-9 items-center gap-2 self-start rounded-full bg-ghost-soft pr-3.5 pl-2.5 text-small font-medium text-text transition-colors duration-(--duration-hover) hover:bg-ghost"
         >
           <Icon icon={ArrowLeft01Icon} size={16} />
           {backLabel}

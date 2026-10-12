@@ -80,7 +80,7 @@ export function MediaButton({
       onClick={onClick}
       aria-expanded={expanded}
       aria-haspopup={expanded === undefined ? undefined : "menu"}
-      className="inline-flex h-11 items-center gap-2 rounded-field bg-ghost px-3.5 text-small font-medium text-text transition-colors duration-(--duration-hover) hover:bg-ghost-strong"
+      className="inline-flex h-11 items-center gap-2 rounded-full bg-ghost px-3.5 text-small font-medium text-text transition-colors duration-(--duration-hover) hover:bg-ghost-strong"
     >
       <Icon icon={icon} size={18} />
       {children}
