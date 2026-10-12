@@ -593,9 +593,10 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
   // --- Home -------------------------------------------------------------------------------
   async function homeSteps() {
     await guarded("home-setup", async () => {
-      // A full Home: five favorite channels, three watched, a movie and an episode in progress.
+      // A full Home: eight favorite channels (more than a page of the carousel), three
+      // watched, a movie and an episode in progress.
       const channels = await db!.select<{ id: number }>(
-        "SELECT id FROM live WHERE epg_channel_id IS NOT NULL AND id <> ? ORDER BY position LIMIT 4",
+        "SELECT id FROM live WHERE epg_channel_id IS NOT NULL AND id <> ? ORDER BY position LIMIT 7",
         [plan.live],
       );
       const ids = [plan.live, ...channels.map((c) => Number(c.id))];
@@ -641,8 +642,15 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
       const resume = $("[data-hero-resume]");
       const sections = [...home.children].map((c) => box(c)!);
       const gaps = sections.slice(1).map((b, i) => round(b.top - sections[i]!.bottom));
-      const cards = [...document.querySelectorAll('[data-row="favorite-channels"] > button')];
+      const scroller = $('[data-row="favorite-channels"]')!;
+      // Cards fully inside the carousel's view.
+      const cards = [...scroller.querySelectorAll("[data-channel-card]")].filter(
+        (c) => box(c)!.right <= box(scroller)!.right + 1,
+      );
       const cardBox = box(cards[0]!)!;
+      const heading = $('section[aria-label="Favorite channels"] h2');
+      const arrows = $("[data-carousel-arrows]");
+      const arrowsBeside = !!arrows && box(arrows)!.left - box(heading)!.right <= 17;
       const cardGap = cards.length > 1 ? box(cards[1]!)!.left - cardBox.right : -1;
       const posters = [
         ...document.querySelectorAll('[data-row="recent-movies"] [data-poster] > span:first-child'),
@@ -676,10 +684,14 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
         [
           `resume ${round(box(resume)?.height ?? 0)} px, radius ${css(resume, "border-radius")}, sides ${css(resume, "padding-left")}`,
           near(box(resume)?.height, 48) &&
-            css(resume, "border-radius") === "14px" &&
+            parseFloat(css(resume, "border-radius")) >= 24 &&
             css(resume, "padding-left") === "22px",
         ],
         [`row gaps ${gaps.join("/")}`, gaps.every((g) => near(g, 40))],
+        [
+          `carousel arrows beside the title ${arrowsBeside}, one row ${round(box(scroller)!.height)} px high`,
+          arrowsBeside && box(scroller)!.height < 200,
+        ],
         [
           `${cards.length} channel cards ${round(cardBox.width)}×${round(cardBox.height)}, gap ${cardGap.toFixed(1)}`,
           cards.length === 5 && near(cardBox.width, cardWidth) && near(cardGap, 14),
@@ -712,7 +724,9 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
 
     await guarded("home-epg", async () => {
       await sleep(4000);
-      const cards = [...document.querySelectorAll('[data-row="favorite-channels"] > button')];
+      const cards = [
+        ...document.querySelectorAll('[data-row="favorite-channels"] [data-channel-card]'),
+      ].slice(0, 5);
       const withNow = cards.filter(
         (c) => (c.querySelector(".line-clamp-2")?.textContent ?? "").trim() !== "",
       );
@@ -720,6 +734,21 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
         "home-epg",
         withNow.length > 0,
         `${withNow.length}/${cards.length} favorite cards show what is on now`,
+      );
+      // Next page of favorites: the row scrolls sideways, Back comes back.
+      const scroller = $('[data-row="favorite-channels"]')!;
+      click($('[aria-label="Next favorite channels"]'));
+      await sleep(700);
+      const moved = scroller.scrollLeft;
+      const backEnabled = !$<HTMLButtonElement>('[aria-label="Previous favorite channels"]')
+        ?.disabled;
+      await snapshot("home-carousel");
+      click($('[aria-label="Previous favorite channels"]'));
+      await sleep(700);
+      check(
+        "home-carousel",
+        moved > 0 && backEnabled && scroller.scrollLeft === 0,
+        `Next scrolls ${round(moved)} px (one page), Previous enabled ${backEnabled}, back to ${round(scroller.scrollLeft)}`,
       );
       const main = $("main")!;
       main.scrollTop = main.scrollHeight;
@@ -731,16 +760,17 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
       injectFreshAccount();
       await sleep(600);
       const text = $("[data-home]")?.textContent ?? "";
+      // Empty sections are left out (user review, 2026-10-12): only recently added remains.
       const ok =
-        text.includes("Movies and episodes you start show up here, ready to resume.") &&
-        text.includes("No favorite channels yet. Press the heart on any channel in Live TV.") &&
+        text.length > 0 &&
+        !$('[data-row="favorite-channels"]') &&
         !$("[data-hero]") &&
         !$('[data-row="continue-watching"]') &&
         !$('[data-row="recent-channels"]');
       check(
         "home-fresh",
         ok,
-        "fresh account: empty lines for in progress and favorites, no history rows",
+        `fresh account: no hero, no favorites, no history rows; rows left: ${[...document.querySelectorAll("[data-home] [data-row]")].map((r) => (r as HTMLElement).dataset.row).join(", ")}`,
       );
       $("main")!.scrollTop = 0;
       await snapshot("home-fresh");
