@@ -79,6 +79,8 @@ export interface Catalog {
   setSort: (sort: GridSort) => void;
   setHidden: (id: string, hidden: boolean) => Promise<void>;
   refreshProgress: () => Promise<void>;
+  /** Shows a category with a sort (Home's "See all"), now or as soon as the grid loads. */
+  openWith: (view: { categoryId: string; sort: GridSort }) => void;
   /** Dev measurements only: replaces the list with `count` generated items. */
   injectSynthetic: (count: number) => void;
 }
@@ -157,6 +159,8 @@ function createCatalog(kind: CatalogKind): Catalog {
   }
 
   let loading: Promise<void> | null = null;
+  /** A view asked for before the grid loaded; it wins over the remembered one. */
+  let pending: { categoryId: string; sort: GridSort } | null = null;
 
   async function load() {
     const { active } = useSession.getState();
@@ -169,8 +173,8 @@ function createCatalog(kind: CatalogKind): Catalog {
       try {
         const [rows, memberships, categories, categoryId, sort] = await Promise.all([
           kind === "vod"
-            ? readVodItems(db).then((r) => r.map(fromVod))
-            : readSeriesItems(db).then((r) => r.map(fromSeries)),
+            ? readVodItems(db).then((r) => r.map(posterFromVod))
+            : readSeriesItems(db).then((r) => r.map(posterFromSeries)),
           readMemberships(db, kind),
           readCategories(db, kind),
           readAccountPref<string>(db, PREF_CATEGORY, ALL),
@@ -195,9 +199,10 @@ function createCatalog(kind: CatalogKind): Catalog {
         refresh({
           accountId: active.id,
           items: new Map(rows.map((r) => [r.id, r])),
-          categoryId,
-          sort,
+          categoryId: pending?.categoryId ?? categoryId,
+          sort: pending?.sort ?? sort,
         });
+        pending = null;
         set({ status: "ready", loadMs: Math.round(performance.now() - t0) });
         void refreshProgress();
       } catch {
@@ -248,6 +253,14 @@ function createCatalog(kind: CatalogKind): Catalog {
       index = { ...index, hidden: next };
       refresh();
     },
+    openWith(view) {
+      if (get().status !== "ready") {
+        pending = view;
+        return;
+      }
+      this.selectCategory(view.categoryId);
+      this.setSort(view.sort);
+    },
     injectSynthetic(count) {
       const items = new Map<number, PosterItem>();
       for (let i = 1; i <= count; i++) {
@@ -269,7 +282,7 @@ function createCatalog(kind: CatalogKind): Catalog {
   };
 }
 
-function fromVod(v: {
+export function posterFromVod(v: {
   id: number;
   name: string;
   icon: string | null;
@@ -291,7 +304,7 @@ function fromVod(v: {
   };
 }
 
-function fromSeries(s: {
+export function posterFromSeries(s: {
   id: number;
   name: string;
   cover: string | null;

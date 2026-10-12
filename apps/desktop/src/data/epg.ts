@@ -15,6 +15,7 @@ import {
   writeAccountPref,
   writeEpgCache,
   type EpgSource,
+  type LiveChannel,
   type Programme,
 } from "@tuner/core";
 import { useEffect, useState } from "react";
@@ -43,6 +44,17 @@ const inFlight = new Set<number>();
 let running = 0;
 let sourcePromise: Promise<EpgSource> | null = null;
 let sourceAccount: string | null = null;
+/** Guide ids of channels read without the whole Live TV list (Home's cards). */
+const knownGuides = new Map<number, string | null>();
+
+/** Tells the EPG about channels a screen read itself, so it knows which have a guide. */
+export function knowChannels(channels: readonly LiveChannel[]) {
+  for (const channel of channels) knownGuides.set(channel.id, channel.epgChannelId);
+}
+
+function guideOf(id: number): string | null {
+  return useLive.getState().channels.get(id)?.epgChannelId ?? knownGuides.get(id) ?? null;
+}
 
 function isWanted(id: number) {
   for (const ids of wanted.values()) if (ids.has(id)) return true;
@@ -82,7 +94,6 @@ export function wantEpg(owner: string, ids: readonly number[]) {
 
 async function request(ids: readonly number[]) {
   const now = Date.now();
-  const channels = useLive.getState().channels;
   const stale = ids.filter(
     (id) => !inFlight.has(id) && now - (fetchedAt.get(id) ?? 0) > EPG_FRESH_MS,
   );
@@ -92,7 +103,7 @@ async function request(ids: readonly number[]) {
   const noGuide = new Map<number, Programme[]>();
   const candidates: number[] = [];
   for (const id of stale) {
-    if (channels.get(id)?.epgChannelId) candidates.push(id);
+    if (guideOf(id)) candidates.push(id);
     else noGuide.set(id, []);
   }
   store(noGuide, now);
@@ -159,6 +170,7 @@ export function useNow(intervalMs = 30_000): number {
 export function resetEpg() {
   wanted.clear();
   fetchedAt.clear();
+  knownGuides.clear();
   queue.length = 0;
   sourcePromise = null;
   useEpg.setState({ schedules: new Map(), source: null });

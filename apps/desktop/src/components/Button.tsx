@@ -25,8 +25,9 @@ export function Button({
       type="button"
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`flex items-center justify-center gap-2 rounded-button px-5 font-semibold transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
-        size === "lg" ? "h-13 text-body-l" : "h-12 text-body"
+      className={`flex items-center justify-center gap-2 rounded-button font-semibold transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
+        // 48 px buttons have 22 px sides (Main.dc.html, Series.dc.html).
+        size === "lg" ? "h-13 px-5 text-body-l" : "h-12 px-5.5 text-body"
       } ${
         variant === "primary"
           ? "bg-accent text-on-accent hover:brightness-110 disabled:opacity-70"

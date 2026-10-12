@@ -7,6 +7,8 @@ interface PosterCardProps {
   item: PosterItem;
   /** 0–1 resume progress, drawn along the poster's bottom edge. */
   progress?: number;
+  /** Replaces the genre/rating and year line (Home's Continue watching: "S2 · E5", "11 min left"). */
+  caption?: { left: string; right: string | null };
   focused: boolean;
   onOpen: (id: number) => void;
   onFocus: (id: number) => void;
@@ -20,13 +22,15 @@ interface PosterCardProps {
 export const PosterCard = memo(function PosterCard({
   item,
   progress = 0,
+  caption,
   focused,
   onOpen,
   onFocus,
 }: PosterCardProps) {
   const src = artworkUrl(item.image);
   const [failed, setFailed] = useState<string | null>(null);
-  const left = item.genre ?? (item.rating ? `★ ${item.rating.toFixed(1)}` : "");
+  const left = caption?.left ?? item.genre ?? (item.rating ? `★ ${item.rating.toFixed(1)}` : "");
+  const right = caption ? caption.right : item.year;
 
   return (
     <button
@@ -64,7 +68,7 @@ export const PosterCard = memo(function PosterCard({
       </span>
       <span className="flex justify-between gap-2 text-caption text-text-muted">
         <span className="truncate">{left}</span>
-        {item.year && <span className="flex-none font-mono">{item.year}</span>}
+        {right && <span className="flex-none font-mono">{right}</span>}
       </span>
     </button>
   );
