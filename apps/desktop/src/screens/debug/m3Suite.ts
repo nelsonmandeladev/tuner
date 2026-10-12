@@ -14,6 +14,7 @@
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { appCacheDir, join } from "@tauri-apps/api/path";
 import type { NavigateFunction } from "react-router";
+import { PANES, setPaneWidth, useLayout } from "../../app/layout";
 import { useEpg } from "../../data/epg";
 import {
   ALL_CHANNELS,
@@ -23,12 +24,13 @@ import {
   setHidden,
   useLive,
 } from "../../data/live";
-import { activeClient, useSession } from "../../data/session";
+import { activeClient, activeLibrary, useSession } from "../../data/session";
 import { open } from "../../player/controller";
 import { useFullscreen } from "../../player/fullscreen";
 import { mpv } from "../../player/mpv";
 import { catchupPosition, stopPlayback, tune, useTuner } from "../../player/tuner";
 import { summarize } from "./benchmark";
+import { personalBackup } from "./personalBackup";
 import {
   $,
   afterPaint,
@@ -117,11 +119,27 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
   })();
 
   const appWindow = getCurrentWindow();
+  // The user's personal tables (favorites, history, resume points, hidden
+  // categories, account settings such as the last channel) are copied first
+  // and put back exactly at the end, as in the M5 suite. A run that crashed
+  // is undone by the next one before it starts.
+  const db = activeLibrary();
+  const personal = db ? personalBackup(db, "dev.m3Suite.backup") : null;
+  let backedUp = false;
+  let before = "";
   try {
-    if (!client || useSession.getState().phase !== "ready") {
+    if (!client || !personal || useSession.getState().phase !== "ready") {
       check("setup", false, "no active account");
       return;
     }
+    const leftover = await personal.read();
+    if (leftover) {
+      await personal.restore(leftover);
+      info("leftover-restored", "a previous run's backup was found and restored first");
+    }
+    before = await personal.fingerprint();
+    await personal.backUp();
+    backedUp = true;
     await appWindow.setFullscreen(false);
     await appWindow.setSize(new LogicalSize(1440, 900));
 
@@ -222,6 +240,11 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
       await showChannel(plan.live, category);
       click($(`[data-channel="${plan.live}"]`));
       await waitFor((s) => s.status === "playing" || s.status === "error", 25_000);
+      // The panes are resizable (M5 review): measure the mockup at the default
+      // widths, then put the user's widths back (neither is saved).
+      const saved = { ...useLayout.getState().panes };
+      setPaneWidth("live.categories", PANES["live.categories"].initial);
+      setPaneWidth("live.preview", PANES["live.preview"].initial);
       await sleep(1200);
       const measured = layoutNumbers();
       const expected: Record<string, number> = {
@@ -249,6 +272,7 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
       );
       const a = await alignment();
       check("preview-aligned", a.ok, a.detail);
+      useLayout.setState({ panes: saved });
       log(`${clock()} SNAPSHOT live-tv (holding 12 s)`);
       await sleep(12_000);
     });
@@ -488,16 +512,29 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
       await sleep(800);
       expect(`S (${subs} subs)`, subs === 0 || player().subtitleTracks.some((t) => t.selected));
       if (subs > 0) press("s");
+      // Leaving or entering full screen resizes the window (and on a screen
+      // shorter than 900 px Windows adjusts it again): give the video up to
+      // 3 s to follow, and report how long it took.
+      const settled = async () => {
+        const t0 = performance.now();
+        let a = await alignment();
+        while (!a.ok && performance.now() - t0 < 3000) {
+          await sleep(100);
+          a = await alignment();
+        }
+        return { ...a, detail: `${a.detail}, aligned after ${round(performance.now() - t0)} ms` };
+      };
       press("f");
       await sleep(1500);
       const windowed = !useFullscreen.getState().on && !(await appWindow.isFullscreen());
-      const a1 = await alignment();
+      const a1 = await settled();
       press("f");
       await sleep(1500);
-      const a2 = await alignment();
-      expect(
-        "F leave/enter full screen + aligned",
-        windowed && useFullscreen.getState().on && a1.ok && a2.ok,
+      const a2 = await settled();
+      const fOk = windowed && useFullscreen.getState().on && a1.ok && a2.ok;
+      expect("F leave/enter full screen + aligned", fOk);
+      log(
+        `${clock()} F detail: windowed ${windowed}, full screen again ${useFullscreen.getState().on}; windowed ${a1.detail}; full screen ${a2.detail}`,
       );
       // Auto-hide: 3 s without input hides the overlay and the cursor.
       await sleep(3600);
@@ -707,6 +744,16 @@ export async function runM3Suite(plan: M3Plan, navigate: NavigateFunction, log: 
     );
     check("released-after-stop", after === 0, `active_cons ${after} 3 s after stop`);
     void sampler;
+    if (personal && backedUp) {
+      const copy = await personal.read();
+      if (copy) await personal.restore(copy);
+      const restored = await personal.fingerprint();
+      check(
+        "personal-data-restored",
+        restored === before,
+        `after restore: ${restored}${restored === before ? "" : ` (before: ${before})`}`,
+      );
+    }
     void navigate("/");
     log(`${clock()} SUITE DONE ${JSON.stringify(results)}`);
   }

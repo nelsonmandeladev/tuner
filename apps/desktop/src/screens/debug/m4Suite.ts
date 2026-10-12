@@ -9,13 +9,17 @@
  *
  * Resume across restarts takes two launches: the full run leaves the movie
  * paused at a known position and prints it; `phase=restart` on the next
- * launch checks the movie resumes there, then removes everything the suite
- * wrote (resume points, history, track choices).
+ * launch checks the movie resumes there. The user's personal tables
+ * (favorites, history, resume points, hidden categories, account settings)
+ * are copied before anything changes and put back exactly at the end of the
+ * restart run (or of a full run with only=series); a crashed run is undone
+ * by the next full run.
  */
 
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
-import { readResume, trackChoiceKey, type ResumePoint } from "@tuner/core";
+import { readResume, writeResume, type ResumePoint } from "@tuner/core";
 import type { NavigateFunction } from "react-router";
+import { PANES, setPaneWidth, useLayout } from "../../app/layout";
 import { movies } from "../../data/catalog";
 import { activeClient, activeLibrary, useSession } from "../../data/session";
 import { seekTo, setPlayerTrace, togglePause } from "../../player/controller";
@@ -39,6 +43,7 @@ import {
   type Check,
   type Log,
 } from "./suiteKit";
+import { personalBackup } from "./personalBackup";
 
 export interface M4Plan {
   movie: number;
@@ -47,6 +52,8 @@ export interface M4Plan {
   /** Run only the series steps (quicker reruns). */
   only: "series" | null;
 }
+
+const BACKUP_KEY = "dev.m4Suite.backup";
 
 /** `movie=1234,series=5678[,phase=restart]` */
 export function parseM4Plan(value: string): M4Plan | null {
@@ -90,7 +97,6 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
 
   const db = activeLibrary();
   const client = await activeClient();
-  const startedAt = Date.now();
   const playedEpisodes = new Set<number>();
   const consSamples: number[] = [];
   const sampleCons = async () => {
@@ -118,11 +124,25 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
   };
 
   setPlayerTrace(log);
+  // The user's personal tables are copied first and put back exactly at the
+  // end (as in the M5 suite). A full run keeps the copy and the movie's
+  // resume point for phase=restart, which restores the copy when done.
+  const personal = db ? personalBackup(db, BACKUP_KEY) : null;
+  let original: Awaited<ReturnType<NonNullable<typeof personal>["backUp"]>> | null = null;
+  let before = "";
   try {
-    if (!db || !client || useSession.getState().phase !== "ready") {
+    if (!db || !client || !personal || useSession.getState().phase !== "ready") {
       check("setup", false, "no active account");
       return;
     }
+    const leftover = await personal.read();
+    if (leftover && plan.phase === "full") {
+      await personal.restore(leftover);
+      info("leftover-restored", "a previous run's backup was found and restored first");
+    }
+    original = plan.phase === "restart" && leftover ? leftover : await personal.backUp();
+    if (plan.phase === "restart" && !leftover) await personal.keep(original);
+    before = plan.phase === "restart" ? "" : await personal.fingerprint();
     const appWindow = getCurrentWindow();
     await appWindow.setFullscreen(false);
     await appWindow.setSize(new LogicalSize(1440, 900));
@@ -154,10 +174,9 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
           `saved ${saved?.positionSecs.toFixed(0)} s before the restart; Resume shown ${!!resumeButton}; started at ${pos.toFixed(0)} s, first frame ${t?.totalMs} ms`,
         );
       });
-      // Stop first: stopping saves a resume point, which the clean-up then removes.
+      // Stop first: stopping saves a resume point, which the restore then removes.
       await stopPlayback();
       await sleep(1000);
-      await cleanUp();
       return;
     }
 
@@ -173,7 +192,7 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
     const after = await sampleCons();
     info("provider-active-cons", `samples [${consSamples.join(",")}]`);
     check("released-after-stop", after === 0, `active_cons ${after} 3 s after stop`);
-    if (plan.phase === "full") await cleanUp({ keepMovieResume: plan.only !== "series" });
+    if (personal && original) await putBack(plan.phase === "full" && plan.only !== "series");
     void navigate("/");
     log(`${clock()} SUITE DONE ${JSON.stringify(results)}`);
   }
@@ -197,6 +216,10 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
 
     await guarded("grid-layout", async () => {
       movies.selectCategory("all");
+      // The rail is resizable (M5 review): measure the mockup at the default
+      // width, then put the user's width back (neither is saved).
+      const saved = { ...useLayout.getState().panes };
+      setPaneWidth("catalog.categories", PANES["catalog.categories"].initial);
       await sleep(600);
       const rail = $("[aria-label=Categories]")?.getBoundingClientRect().width ?? 0;
       const posters = [...document.querySelectorAll("[data-poster] > span:first-child")].map((p) =>
@@ -209,6 +232,7 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
         document.querySelector("[data-poster] > span:first-child")!,
       ).borderRadius;
       const ratio = first.height / first.width;
+      useLayout.setState({ panes: saved });
       const ok =
         Math.abs(rail - 264) <= 1 &&
         Math.abs(ratio - 1.5) < 0.01 &&
@@ -217,7 +241,7 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
       check(
         "grid-layout",
         ok,
-        `rail ${round(rail)} px, ${sameRow.length} columns, poster ${first.width.toFixed(1)}×${first.height.toFixed(1)} (ratio ${ratio.toFixed(3)}), radius ${radius}, gap ${gap.toFixed(1)} px`,
+        `rail ${round(rail)} px (default width), ${sameRow.length} columns, poster ${first.width.toFixed(1)}×${first.height.toFixed(1)} (ratio ${ratio.toFixed(3)}), radius ${radius}, gap ${gap.toFixed(1)} px`,
       );
       log(`${clock()} SNAPSHOT movies (holding 8 s)`);
       await sleep(8000);
@@ -577,18 +601,29 @@ export async function runM4Suite(plan: M4Plan, navigate: NavigateFunction, log: 
     });
   }
 
-  /** Removes what the suite wrote, so the user's library is as it was. */
-  async function cleanUp({ keepMovieResume = false } = {}) {
-    if (!db) return;
-    await db.execute("DELETE FROM history WHERE watched_at >= ?", [startedAt - 60_000]);
-    for (const id of playedEpisodes)
-      await db.execute("DELETE FROM resume WHERE kind = 'episode' AND id = ?", [id]);
-    if (!keepMovieResume)
-      await db.execute("DELETE FROM resume WHERE kind = 'vod' AND id = ?", [plan.movie]);
-    await db.execute("DELETE FROM settings WHERE key = ?", [trackChoiceKey("vod", plan.movie)]);
-    await db.execute("DELETE FROM settings WHERE key = ?", [trackChoiceKey("series", plan.series)]);
-    log(
-      `${clock()} cleaned up suite data${keepMovieResume ? " (kept the movie's resume point for phase=restart)" : ""}`,
-    );
+  /**
+   * Puts the user's personal tables back exactly. With `keepMovieResume` the
+   * suite's 600 s resume point for the movie and the backup row stay, for
+   * phase=restart (which restores the backup when it is done).
+   */
+  async function putBack(keepMovieResume: boolean) {
+    if (!db || !personal || !original) return;
+    const movieResume = keepMovieResume ? await resumeOf("vod", plan.movie) : null;
+    await personal.restore(original);
+    const restored = await personal.fingerprint();
+    if (before) {
+      check(
+        "personal-data-restored",
+        restored === before,
+        `after restore: ${restored}${restored === before ? "" : ` (before: ${before})`}`,
+      );
+    } else {
+      info("personal-data-restored", `after the restart run: ${restored}`);
+    }
+    if (movieResume) {
+      await personal.keep(original);
+      await writeResume(db, "vod", plan.movie, movieResume);
+      log(`${clock()} kept the movie's resume point for phase=restart`);
+    }
   }
 }

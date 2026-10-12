@@ -32,11 +32,16 @@ export function personalBackup(db: SqlAdapter, key: string) {
         otherParams(table),
       );
     }
+    await keep(backup);
+    return backup;
+  }
+
+  /** Writes `backup` into the backup row (a later run restores it). */
+  async function keep(backup: Backup) {
     await db.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", [
       key,
       JSON.stringify(backup),
     ]);
-    return backup;
   }
 
   /** Puts every personal table back as it was, in one transaction, then drops the backup row. */
@@ -70,7 +75,7 @@ export function personalBackup(db: SqlAdapter, key: string) {
     return parts.join(" ");
   }
 
-  return { read, backUp, restore, fingerprint };
+  return { read, backUp, keep, restore, fingerprint };
 }
 
 export function hash(text: string): string {
