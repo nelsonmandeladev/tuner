@@ -136,6 +136,15 @@ export function activeClient(): Promise<XtreamClient | null> {
   return clientFor.client;
 }
 
+/** An app-wide setting from `app.db` (not tied to an account), or null. */
+export async function readAppSetting(key: string): Promise<string | null> {
+  return getSetting(await app(), key);
+}
+
+export async function writeAppSetting(key: string, value: string): Promise<void> {
+  await setSetting(await app(), key, value);
+}
+
 /** Dev checks only: channel logo URLs from the active library. */
 export async function sampleLiveIcons(limit: number): Promise<string[]> {
   return libraryDb ? readLiveIcons(libraryDb, limit) : [];

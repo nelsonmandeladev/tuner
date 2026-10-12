@@ -10,6 +10,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
+import { loadLayout } from "./app/layout";
 import { loadHome } from "./data/home";
 import { boot, useSession } from "./data/session";
 
@@ -34,7 +35,9 @@ async function preloadHome() {
 // library is loaded and its first frame has painted, so the user never sees an
 // empty window or a flash of the wrong screen. Two frames: the first runs
 // before React's paint, the second after it.
-void (inTauri ? boot().then(preloadHome) : Promise.resolve()).finally(() =>
+void (
+  inTauri ? boot().then(() => Promise.all([preloadHome(), loadLayout()])) : Promise.resolve()
+).finally(() =>
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       if (inTauri) void getCurrentWindow().show();
