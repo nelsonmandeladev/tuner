@@ -4,8 +4,8 @@ import { Icon } from "./Icon";
 
 interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className"> {
   variant?: "primary" | "ghost";
-  /** 52 px on Connect, 48 elsewhere (DESIGN.md "Spacing and sizes"). */
-  size?: "md" | "lg";
+  /** 52 px on Connect, 48 elsewhere (DESIGN.md "Spacing and sizes"), 40 in Settings rows. */
+  size?: "sm" | "md" | "lg";
   /** Shows a spinner in place of nothing else changing: the only spinner DESIGN.md allows. */
   busy?: boolean;
   children: ReactNode;
@@ -27,7 +27,11 @@ export function Button({
       aria-busy={busy || undefined}
       className={`flex items-center justify-center gap-2 rounded-full font-semibold transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
         // 48 px buttons have 22 px sides (Main.dc.html, Series.dc.html).
-        size === "lg" ? "h-13 px-5 text-body-l" : "h-12 px-5.5 text-body"
+        size === "lg"
+          ? "h-13 px-5 text-body-l"
+          : size === "sm"
+            ? "h-10 px-4.5 text-small"
+            : "h-12 px-5.5 text-body"
       } ${
         variant === "primary"
           ? "bg-accent text-on-accent hover:brightness-110 disabled:opacity-70"
