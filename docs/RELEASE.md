@@ -121,6 +121,19 @@ An MSIX app reads existing files from the real `AppData` folder first: on a PC w
 
 Removing an account in Settings deletes its database files, search index, keychain entry and the image cache (the M6 suite proves it with a file and keychain listing). An uninstall does not remove Credential Manager entries: **remove your accounts in Settings before uninstalling**, or delete the `xtream:…com.measdev.tuner` entries in Credential Manager afterwards.
 
+Measured in Windows Sandbox on 2026-10-12 (0.1.0, clean Windows 11 26100, no Visual C++ runtime installed):
+
+| Step | NSIS | MSIX |
+| --- | --- | --- |
+| Install | 6.5 s silent, 108.4 MB in `%LOCALAPPDATA%\Tuner` | `Add-AppxPackage` after trusting the dev certificate in the Sandbox |
+| Connect → Live TV listed | 7.7 s | 6.5 s |
+| Connect → watching (Start watching, Live TV, channel typed, first frame) | about 20 s | about 17 s |
+| Decoding | software (no GPU decoder in the Sandbox) | software |
+| Remove the last account in Settings | no account files, index, images or keychain entry left; back to Connect | same code |
+| Uninstall, "Delete the application data" ticked | nothing left: no files, registry keys, shortcuts or keychain entries | — |
+| Uninstall, box not ticked (also `/S`) | `%APPDATA%\com.measdev.tuner\app.db` (0.1 MB), `%LOCALAPPDATA%\com.measdev.tuner` (WebView2 profile, 15–34 MB), `HKCU\Software\MEASDEV\Tuner` | — |
+| `Remove-AppxPackage` (2 s) | — | package and all its `LocalCache` data gone; only the keychain entry of an account not removed first stays |
+
 ## Testing a clean install in Windows Sandbox
 
 winapp drives a Windows Sandbox (Windows 11 24H2 or later, virtualisation on). Windows Sandbox must be enabled once, by the user, from an administrator terminal, followed by a restart and opening Windows Sandbox from Start once:
