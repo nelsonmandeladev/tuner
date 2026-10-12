@@ -120,6 +120,14 @@ Built in the mockups' language; review these:
 - **Categories pane:** 264 px wide instead of the mockup's 232 (user review, 2026-10-11): provider category names are long.
 - **Mismatches:** the mockup's filter field is 44 high (DESIGN says inputs are 48): built at 44. Scrollbars are thin and in `--line-strong` (the mockup shows none). Channel numbers on the test provider run to 7 digits, so the number column sizes to the longest number in the list instead of 32 px.
 
+### Movies and Series: what the mockups do not show (M4)
+
+- **Grid:** Main.dc.html's poster card in a virtualised grid (columns from the width, min 168 px, gaps 14). Movies have no genre in the list API, so the caption shows the rating where the mockup shows the genre; series show their genre. A thin accent bar on the poster's bottom edge shows resume progress. Sort is a SegmentedControl (Recently added · Name · Rating) beside the category title and count.
+- **Movie detail:** Series.dc.html's hero (backdrop or generated hero art, scrims, Back) with year · genre · duration · rating · quality tags, plot, a resume bar, Play/Resume, "Start over" (ghost) and the heart; Director and Cast below. The poster sits on the right when there is no backdrop.
+- **Movie/episode player:** Player.dc.html's layout without the channel parts: back, title and the stream info chip on top; eyebrow (year or "S2 · E5"), title, a seekable bar with elapsed and remaining time, ±10 s, mute, audio and subtitle menus, "Next episode", full screen.
+- **Up next:** a card bottom-right (eyebrow "Next episode", code, title, "Playing in 7 s" with a bar, Play now / Cancel), at 10 s left.
+- New tokens: `--ghost-soft`, `--scrim-hero`, `--scrim-hero-bottom`, `--text-poster`.
+
 ## Motion
 
 Fluid, quick, never showy. Respect `prefers-reduced-motion` (fall back to opacity only, or none).
