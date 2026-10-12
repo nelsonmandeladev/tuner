@@ -1,15 +1,15 @@
-import { FavouriteIcon, PlayIcon } from "@hugeicons/core-free-icons";
+import { PlayIcon } from "@hugeicons/core-free-icons";
 import { nowNext, progressOf, type LiveChannel, type Programme } from "@tuner/core";
 import { useState } from "react";
 import { formatClock } from "../../app/format";
 import { LiveBadge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import { GeneratedArt } from "../../components/GeneratedArt";
+import { FavoriteButton } from "../../components/FavoriteButton";
 import { Icon } from "../../components/Icon";
 import { ProgressBar } from "../../components/ProgressBar";
 import { Toast } from "../../components/Toast";
 import { useNow, useSchedule } from "../../data/epg";
-import { toggleFavorite, useLive } from "../../data/live";
 import { usePlayer } from "../../player/store";
 import { retry, useTuner } from "../../player/tuner";
 import { VideoSurface } from "../../player/VideoSurface";
@@ -30,7 +30,6 @@ interface PreviewPaneProps {
 export function PreviewPane({ channel, onWatch, onCatchup }: PreviewPaneProps) {
   const now = useNow();
   const schedule = useSchedule(channel?.id);
-  const favorite = useLive((s) => (channel ? s.favorites.includes(channel.id) : false));
   // The tab belongs to a channel: another channel opens on "Up next".
   const [tabFor, setTabFor] = useState<{ id: number; tab: "next" | "catchup" } | null>(null);
   const tab = channel?.tvArchive && tabFor?.id === channel.id ? tabFor.tab : "next";
@@ -81,20 +80,7 @@ export function PreviewPane({ channel, onWatch, onCatchup }: PreviewPaneProps) {
             Watch
           </Button>
         </div>
-        <button
-          type="button"
-          aria-label={
-            favorite ? `Remove ${channel.name} from favorites` : `Add ${channel.name} to favorites`
-          }
-          aria-pressed={favorite}
-          data-favorite
-          onClick={() => void toggleFavorite(channel.id)}
-          className={`flex size-12 flex-none items-center justify-center rounded-button border border-line-strong bg-surface transition-colors duration-(--duration-hover) ease-out hover:bg-surface-raised ${
-            favorite ? "text-accent" : "text-text"
-          }`}
-        >
-          <Icon icon={FavouriteIcon} className={favorite ? "[&_path]:fill-current" : ""} />
-        </button>
+        <FavoriteButton kind="live" id={channel.id} name={channel.name} />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 border-t border-line pt-4">

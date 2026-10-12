@@ -1,14 +1,14 @@
-import { FavouriteIcon, PlayIcon, RefreshIcon } from "@hugeicons/core-free-icons";
+import { PlayIcon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { resumeFrom, resumeProgress, splitTitleYear, yearOf } from "@tuner/core";
-import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { formatPosition } from "../../app/format";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
+import { FavoriteButton } from "../../components/FavoriteButton";
 import { Icon } from "../../components/Icon";
 import { ProgressBar } from "../../components/ProgressBar";
 import { Screen } from "../../components/Screen";
-import { loadMovie, setItemFavorite, type MovieDetail as Detail } from "../../data/details";
+import { loadMovie, type MovieDetail as Detail } from "../../data/details";
 import { useAsync } from "../../hooks/useAsync";
 import { enterPlayer } from "../../player/fullscreen";
 import { playVod } from "../../player/tuner";
@@ -41,7 +41,6 @@ export function MovieDetail() {
 function MovieView({ detail, onBack }: { detail: Detail; onBack: () => void }) {
   const navigate = useNavigate();
   const { item, info, resume } = detail;
-  const [favorite, setFavorite] = useState(detail.favorite);
   const { title, year, tags } = splitTitleYear(item.name);
   const start = resumeFrom(resume);
   const minutes = info?.durationSecs ? Math.round(info.durationSecs / 60) : null;
@@ -118,21 +117,7 @@ function MovieView({ detail, onBack }: { detail: Detail; onBack: () => void }) {
               Start over
             </Button>
           )}
-          <button
-            type="button"
-            aria-label={favorite ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-            aria-pressed={favorite}
-            data-favorite
-            onClick={() => {
-              setFavorite(!favorite);
-              void setItemFavorite("vod", item.id, !favorite);
-            }}
-            className={`flex size-12 items-center justify-center rounded-button bg-ghost transition-colors duration-(--duration-hover) hover:bg-ghost-strong ${
-              favorite ? "text-accent" : "text-text"
-            }`}
-          >
-            <Icon icon={FavouriteIcon} className={favorite ? "[&_path]:fill-current" : ""} />
-          </button>
+          <FavoriteButton kind="vod" id={item.id} name={title} tone="media" />
         </div>
       </Hero>
 

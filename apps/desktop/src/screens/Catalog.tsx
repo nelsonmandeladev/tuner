@@ -7,7 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { PosterGrid } from "../components/PosterGrid";
 import { Screen } from "../components/Screen";
 import { SegmentedControl } from "../components/SegmentedControl";
-import { movies, series, type Catalog as CatalogStore } from "../data/catalog";
+import { FAVORITES, movies, series, type Catalog as CatalogStore } from "../data/catalog";
 import { useSession } from "../data/session";
 
 const count = new Intl.NumberFormat();
@@ -87,7 +87,13 @@ function Catalog({ store, path }: { store: CatalogStore; path: "/movies" | "/ser
         </div>
         {status === "ready" && list.length === 0 ? (
           <div className="px-8">
-            <EmptyState message="This category is empty." />
+            <EmptyState
+              message={
+                categoryId === FAVORITES
+                  ? `No favorite ${label.toLowerCase()} yet. Press the heart on any ${store.kind === "vod" ? "movie" : "series"}.`
+                  : "This category is empty."
+              }
+            />
           </div>
         ) : (
           <PosterGrid

@@ -1,4 +1,4 @@
-import { FavouriteIcon, PlayIcon } from "@hugeicons/core-free-icons";
+import { PlayIcon } from "@hugeicons/core-free-icons";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   episodeToPlay,
@@ -16,6 +16,7 @@ import { useNavigate, useParams } from "react-router";
 import { formatLeft } from "../../app/format";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
+import { FavoriteButton } from "../../components/FavoriteButton";
 import { Icon } from "../../components/Icon";
 import { Screen } from "../../components/Screen";
 import { SegmentedControl } from "../../components/SegmentedControl";
@@ -23,7 +24,6 @@ import { artworkUrl } from "../../data/artwork";
 import {
   loadSeries,
   readAutoplayNext,
-  setItemFavorite,
   writeAutoplayNext,
   type SeriesDetail as Detail,
 } from "../../data/details";
@@ -77,7 +77,6 @@ function SeriesView({ detail, onBack }: { detail: Detail; onBack: () => void }) 
     [episodes],
   );
   const [season, setSeason] = useState<number>(offer?.episode.season ?? seasons[0] ?? 0);
-  const [favorite, setFavorite] = useState(detail.favorite);
   const [autoplay, setAutoplay] = useState(true);
   useEffect(() => {
     void readAutoplayNext().then(setAutoplay);
@@ -125,21 +124,7 @@ function SeriesView({ detail, onBack }: { detail: Detail; onBack: () => void }) 
               {offer.resume ? "Resume" : "Play"} {code(offer.episode)}
             </Button>
           )}
-          <button
-            type="button"
-            aria-label={favorite ? `Remove ${title} from favorites` : `Add ${title} to favorites`}
-            aria-pressed={favorite}
-            data-favorite
-            onClick={() => {
-              setFavorite(!favorite);
-              void setItemFavorite("series", item.id, !favorite);
-            }}
-            className={`flex size-12 items-center justify-center rounded-button bg-ghost transition-colors duration-(--duration-hover) hover:bg-ghost-strong ${
-              favorite ? "text-accent" : "text-text"
-            }`}
-          >
-            <Icon icon={FavouriteIcon} className={favorite ? "[&_path]:fill-current" : ""} />
-          </button>
+          <FavoriteButton kind="series" id={item.id} name={title} tone="media" />
         </div>
       </Hero>
 

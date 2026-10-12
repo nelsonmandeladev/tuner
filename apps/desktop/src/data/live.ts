@@ -10,17 +10,16 @@ import {
   foldText,
   readAccountPref,
   readCategories,
-  readFavorites,
   readLiveChannels,
   readMemberships,
   setCategoryHidden,
-  setFavorite,
   writeAccountPref,
   type CategoryWithCount,
   type LiveChannel,
 } from "@tuner/core";
 import { create } from "zustand";
 import type { CategoryView } from "./categoryView";
+import { loadFavorites, toggleFavorite as toggleFavoriteOf, useFavorites } from "./favorites";
 import { activeLibrary, useSession } from "./session";
 
 /** Built-in categories above the provider's own (LiveTV.dc.html). */
@@ -156,15 +155,15 @@ export function loadLive(): Promise<void> {
     const t0 = performance.now();
     set({ status: "loading" });
     try {
-      const [channelRows, memberships, categories, favorites, categoryId, channelId] =
-        await Promise.all([
-          readLiveChannels(db),
-          readMemberships(db, "live"),
-          readCategories(db, "live"),
-          readFavorites(db, "live"),
-          readAccountPref<string>(db, PREF_CATEGORY, ALL_CHANNELS),
-          readAccountPref<number | null>(db, PREF_CHANNEL, null),
-        ]);
+      const [channelRows, memberships, categories, , categoryId, channelId] = await Promise.all([
+        readLiveChannels(db),
+        readMemberships(db, "live"),
+        readCategories(db, "live"),
+        loadFavorites(),
+        readAccountPref<string>(db, PREF_CATEGORY, ALL_CHANNELS),
+        readAccountPref<number | null>(db, PREF_CHANNEL, null),
+      ]);
+      const favorites = useFavorites.getState().live;
       const channels = new Map(channelRows.map((c) => [c.id, c]));
       const categoriesOf = new Map<number, string[]>();
       for (const [category, ids] of memberships) {
@@ -227,19 +226,14 @@ export function rememberChannel(id: number) {
   if (db) void writeAccountPref(db, PREF_CHANNEL, id);
 }
 
-export function isFavorite(id: number): boolean {
-  return get().favorites.includes(id);
+export function toggleFavorite(id: number) {
+  return toggleFavoriteOf("live", id);
 }
 
-export async function toggleFavorite(id: number) {
-  const db = activeLibrary();
-  if (!db) return;
-  const on = !isFavorite(id);
-  await setFavorite(db, "live", id, on, Date.now());
-  refreshList({
-    favorites: on ? [...get().favorites, id] : get().favorites.filter((f) => f !== id),
-  });
-}
+// A heart pressed anywhere (Live TV, Home, search) updates the Favorites category.
+useFavorites.subscribe((state, prev) => {
+  if (state.live !== prev.live && get().status === "ready") refreshList({ favorites: state.live });
+});
 
 export async function setHidden(categoryId: string, hidden: boolean) {
   const db = activeLibrary();

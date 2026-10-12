@@ -1,6 +1,6 @@
 /**
  * Movies and Series grids (ROADMAP M4): every item of a kind, its categories
- * with counts, hidden categories, the sort, and resume progress, read once
+ * with counts, hidden categories, favorites (M5), the sort, and resume progress, read once
  * from the account's library. Category and sort changes then run on arrays
  * in memory (CLAUDE.md rule 6: screens never fetch).
  */
@@ -23,6 +23,7 @@ import {
 } from "@tuner/core";
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import type { CategoryView } from "./categoryView";
+import { loadFavorites, useFavorites } from "./favorites";
 import { activeLibrary, useSession } from "./session";
 
 export type CatalogKind = "vod" | "series";
@@ -44,6 +45,8 @@ export interface PosterItem {
 }
 
 export const ALL = "all";
+/** Built-in category above "All" (SPEC §8: favorites are a filter in Movies and Series). */
+export const FAVORITES = "fav";
 
 export interface CatalogState {
   status: "idle" | "loading" | "ready" | "error";
@@ -118,7 +121,16 @@ function createCatalog(kind: CatalogKind): Catalog {
       .filter((c) => c.count > 0)
       .map((c) => ({ ...c, hidden: index.hidden.has(c.id), builtIn: false }));
     const all = allVisible();
+    const items = get().items;
+    const favorites = useFavorites.getState()[kind].filter((id) => items.has(id));
     const categories: CategoryView[] = [
+      {
+        id: FAVORITES,
+        name: "Favorites",
+        count: favorites.length,
+        hidden: false,
+        builtIn: true,
+      },
       {
         id: ALL,
         name: kind === "vod" ? "All movies" : "All series",
@@ -130,7 +142,12 @@ function createCatalog(kind: CatalogKind): Catalog {
     ];
     const state = get();
     const categoryId = categories.some((c) => c.id === state.categoryId) ? state.categoryId : ALL;
-    const ids = categoryId === ALL ? all : (index.memberships.get(categoryId) ?? []);
+    const ids =
+      categoryId === ALL
+        ? all
+        : categoryId === FAVORITES
+          ? favorites
+          : (index.memberships.get(categoryId) ?? []);
     set({
       categories,
       hiddenCategories: provider.filter((c) => c.hidden),
@@ -158,6 +175,7 @@ function createCatalog(kind: CatalogKind): Catalog {
           readCategories(db, kind),
           readAccountPref<string>(db, PREF_CATEGORY, ALL),
           readAccountPref<GridSort>(db, PREF_SORT, "recent"),
+          loadFavorites(),
         ]);
         const categoriesOf = new Map<number, string[]>();
         for (const [category, ids] of memberships) {
@@ -198,6 +216,11 @@ function createCatalog(kind: CatalogKind): Catalog {
     set({ progress: new Map([...points].map(([id, p]) => [id, resumeProgress(p)])) });
   }
 
+  // A heart pressed on a detail page, Home or search updates the Favorites category.
+  useFavorites.subscribe((state, prev) => {
+    if (state[kind] !== prev[kind] && get().status === "ready") refresh();
+  });
+
   return {
     kind,
     use,
@@ -217,7 +240,7 @@ function createCatalog(kind: CatalogKind): Catalog {
     },
     async setHidden(id, hidden) {
       const db = activeLibrary();
-      if (!db || id === ALL) return;
+      if (!db || id === ALL || id === FAVORITES) return;
       await setCategoryHidden(db, kind, id, hidden);
       const next = new Set(index.hidden);
       if (hidden) next.add(id);
