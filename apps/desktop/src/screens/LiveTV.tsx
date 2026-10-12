@@ -7,7 +7,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Screen } from "../components/Screen";
 import { Toast } from "../components/Toast";
 import { useNow, wantEpg } from "../data/epg";
-import { loadLive, selectCategory, selectChannel, useLive } from "../data/live";
+import { loadLive, selectCategory, selectChannel, setHidden, useLive } from "../data/live";
 import { useSession } from "../data/session";
 import { enterPlayer } from "../player/fullscreen";
 import {
@@ -19,7 +19,7 @@ import {
   typeDigit,
   useTuner,
 } from "../player/tuner";
-import { CategoryList } from "./live/CategoryList";
+import { CategoryList } from "../components/CategoryList";
 import { ChannelList } from "./live/ChannelList";
 import { NumberEntry } from "./live/NumberEntry";
 import { PreviewPane } from "./live/PreviewPane";
@@ -40,6 +40,9 @@ export function LiveTV() {
     s.selectedId === null ? null : (s.channels.get(s.selectedId) ?? null),
   );
   const notice = useTuner((s) => s.notice);
+  const categories = useLive((s) => s.categories);
+  const hiddenCategories = useLive((s) => s.hiddenCategories);
+  const categoryId = useLive((s) => s.categoryId);
   const scrollToIndex = useRef<((index: number) => void) | null>(null);
   useNow();
 
@@ -131,15 +134,20 @@ export function LiveTV() {
       className="relative grid h-full grid-cols-[minmax(200px,264px)_minmax(320px,1fr)_minmax(320px,460px)]"
       data-live-screen
     >
-      <CategoryList />
+      <CategoryList
+        categories={categories}
+        hidden={hiddenCategories}
+        activeId={categoryId}
+        onSelect={selectCategory}
+        onSetHidden={(id, hidden) => void setHidden(id, hidden)}
+      />
       <ChannelList onPick={pick} onOpen={openPlayer} scrollRef={scrollToIndex} />
       <PreviewPane
         channel={channel}
         onWatch={() => openPlayer()}
         onCatchup={(programme: Programme) => {
           if (!channel) return;
-          void playCatchup(channel.id, programme);
-          void enterPlayer(navigate);
+          void enterPlayer(navigate, playCatchup(channel.id, programme));
         }}
       />
       <NumberEntry />

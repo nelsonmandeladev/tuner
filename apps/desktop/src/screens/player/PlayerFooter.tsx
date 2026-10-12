@@ -1,34 +1,21 @@
 import {
   ArrowDown01Icon,
-  ArrowExpand01Icon,
-  ArrowShrink01Icon,
   ArrowUp01Icon,
-  AudioWave01Icon,
   GoBackward10SecIcon,
   GoForward10SecIcon,
   Menu01Icon,
-  PauseIcon,
-  PlayIcon,
-  SubtitleIcon,
   TvSmartIcon,
-  VolumeHighIcon,
-  VolumeMute01Icon,
 } from "@hugeicons/core-free-icons";
-import type { IconSvgElement } from "@hugeicons/react";
 import { nowNext, progressOf, type LiveChannel } from "@tuner/core";
-import type { ReactNode } from "react";
 import { formatClock, formatDay, formatPosition } from "../../app/format";
-import { trackLabel } from "../../player/trackLabel";
-import { Icon } from "../../components/Icon";
 import { IconButton } from "../../components/IconButton";
 import { ProgressBar } from "../../components/ProgressBar";
 import { useNow, useSchedule } from "../../data/epg";
-import { seekBy, togglePause } from "../../player/controller";
-import { toggleFullscreen, useFullscreen } from "../../player/fullscreen";
-import { usePlayer, type Track } from "../../player/store";
-import { catchupPosition, toggleUserMute, tune, useTuner, zap } from "../../player/tuner";
+import { seekBy } from "../../player/controller";
+import { usePlayer } from "../../player/store";
+import { catchupPosition, tune, useTuner, zap } from "../../player/tuner";
 import type { PlayerMenu } from "../Player";
-import { TrackMenu } from "./TrackMenu";
+import { FullscreenButton, MediaButton, MuteButton, PauseButton, TrackButtons } from "./Controls";
 
 interface PlayerFooterProps {
   channel: LiveChannel;
@@ -48,13 +35,8 @@ export function PlayerFooter({ channel, menu, setMenu, onGuide }: PlayerFooterPr
   const now = useNow(10_000);
   const schedule = useSchedule(channel.id);
   const { now: current, next } = nowNext(schedule ?? [], now);
-  const paused = usePlayer((s) => s.paused);
   const timePos = usePlayer((s) => s.timePos);
   const origin = useTuner((s) => s.catchupOrigin);
-  const audioTracks = usePlayer((s) => s.audioTracks);
-  const subtitleTracks = usePlayer((s) => s.subtitleTracks);
-  const muted = useTuner((s) => s.userMuted);
-  const fullscreen = useFullscreen((s) => s.on);
   const catchup = mode === "catchup" && recording !== null;
   const length = recording ? (recording.end - recording.start) / 1000 : 0;
   const position = catchupPosition(timePos, origin);
@@ -109,14 +91,7 @@ export function PlayerFooter({ channel, menu, setMenu, onGuide }: PlayerFooterPr
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label={paused ? "Play" : "Pause"}
-            onClick={() => void togglePause()}
-            className="flex size-13 items-center justify-center rounded-full bg-text text-bg transition-transform duration-(--duration-hover) active:scale-95"
-          >
-            <Icon icon={paused ? PlayIcon : PauseIcon} className="[&_path]:fill-current" />
-          </button>
+          <PauseButton />
           {catchup ? (
             <>
               <IconButton
@@ -148,35 +123,10 @@ export function PlayerFooter({ channel, menu, setMenu, onGuide }: PlayerFooterPr
               />
             </>
           )}
-          <IconButton
-            icon={muted ? VolumeMute01Icon : VolumeHighIcon}
-            variant="media"
-            aria-label={muted ? "Unmute" : "Mute"}
-            aria-pressed={muted}
-            onClick={toggleUserMute}
-          />
+          <MuteButton />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <MediaButton
-              icon={AudioWave01Icon}
-              onClick={() => setMenu(menu === "audio" ? null : "audio")}
-              expanded={menu === "audio"}
-            >
-              {audioLabel(audioTracks)}
-            </MediaButton>
-            {menu === "audio" && <TrackMenu kind="audio" onClose={() => setMenu(null)} />}
-          </div>
-          <div className="relative">
-            <MediaButton
-              icon={SubtitleIcon}
-              onClick={() => setMenu(menu === "sub" ? null : "sub")}
-              expanded={menu === "sub"}
-            >
-              {subtitleLabel(subtitleTracks)}
-            </MediaButton>
-            {menu === "sub" && <TrackMenu kind="sub" onClose={() => setMenu(null)} />}
-          </div>
+          <TrackButtons menu={menu} setMenu={setMenu} />
           {catchup ? (
             <MediaButton icon={TvSmartIcon} onClick={() => tune(channel.id)}>
               Back to live
@@ -186,49 +136,9 @@ export function PlayerFooter({ channel, menu, setMenu, onGuide }: PlayerFooterPr
               Guide
             </MediaButton>
           )}
-          <IconButton
-            icon={fullscreen ? ArrowShrink01Icon : ArrowExpand01Icon}
-            variant="media"
-            aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-            onClick={() => void toggleFullscreen()}
-          />
+          <FullscreenButton />
         </div>
       </div>
     </footer>
   );
-}
-
-function MediaButton({
-  icon,
-  children,
-  onClick,
-  expanded,
-}: {
-  icon: IconSvgElement;
-  children: ReactNode;
-  onClick: () => void;
-  expanded?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={expanded}
-      aria-haspopup={expanded === undefined ? undefined : "menu"}
-      className="inline-flex h-11 items-center gap-2 rounded-field bg-ghost px-3.5 text-small font-medium text-text transition-colors duration-(--duration-hover) hover:bg-ghost-strong"
-    >
-      <Icon icon={icon} size={18} />
-      {children}
-    </button>
-  );
-}
-
-function audioLabel(tracks: Track[]): string {
-  const index = tracks.findIndex((t) => t.selected);
-  return index === -1 ? "Audio" : trackLabel(tracks[index]!, index);
-}
-
-function subtitleLabel(tracks: Track[]): string {
-  const index = tracks.findIndex((t) => t.selected);
-  return index === -1 ? "Subtitles off" : trackLabel(tracks[index]!, index);
 }

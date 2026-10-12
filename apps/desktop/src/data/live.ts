@@ -20,20 +20,14 @@ import {
   type LiveChannel,
 } from "@tuner/core";
 import { create } from "zustand";
+import type { CategoryView } from "./categoryView";
 import { activeLibrary, useSession } from "./session";
 
 /** Built-in categories above the provider's own (LiveTV.dc.html). */
 export const FAVORITES = "fav";
 export const ALL_CHANNELS = "all";
 
-export interface CategoryView {
-  id: string;
-  name: string;
-  count: number;
-  hidden: boolean;
-  /** Favorites and All channels: cannot be hidden. */
-  builtIn: boolean;
-}
+export type { CategoryView } from "./categoryView";
 
 export interface LiveState {
   status: "idle" | "loading" | "ready" | "error";

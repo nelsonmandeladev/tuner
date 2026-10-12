@@ -40,6 +40,25 @@ export function liveExt(account: Account): "ts" | "m3u8" {
     : "m3u8";
 }
 
+/** A movie or an episode, from `start` seconds when resuming. */
+export function vodSource(
+  account: Account,
+  media: { kind: "vod" | "episode"; id: number; ext: string },
+  start: number | null,
+): PlayerSource {
+  const kind = media.kind === "vod" ? "movie" : "series";
+  return {
+    label: `${kind} ${media.id}.${media.ext}${start ? ` from ${Math.round(start)} s` : ""}`,
+    live: false,
+    load: () =>
+      invoke<void>("stream_load", {
+        account: { id: account.id, server: account.server, username: account.username },
+        request: { kind, id: media.id, ext: media.ext },
+        start,
+      }),
+  };
+}
+
 export function liveSource(account: Account, channel: LiveChannel): PlayerSource {
   return {
     label: `live ${channel.id}`,

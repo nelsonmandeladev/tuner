@@ -1,8 +1,8 @@
 import { ArrowDown01Icon, ArrowUp01Icon, ViewIcon, ViewOffIcon } from "@hugeicons/core-free-icons";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Icon } from "../../components/Icon";
-import { selectCategory, setHidden, useLive, type CategoryView } from "../../data/live";
+import type { CategoryView } from "../data/categoryView";
+import { Icon } from "./Icon";
 
 const count = new Intl.NumberFormat();
 /** 40 px item + 4 px gap (LiveTV.dc.html). */
@@ -10,17 +10,29 @@ const ITEM = 44;
 
 type Item = { type: "category"; category: CategoryView } | { type: "hidden-header"; count: number };
 
+interface CategoryListProps {
+  /** Built-in and visible categories, in display order. */
+  categories: CategoryView[];
+  hidden: CategoryView[];
+  activeId: string;
+  onSelect: (id: string) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+}
+
 /**
- * DESIGN.md `CategoryItem` list: Favorites, All channels, then the
- * provider's categories with their counts. Providers send hundreds, so the
- * list is virtualised. Each category can be hidden (the eye button on hover
- * or focus); hidden ones collect under "Hidden" at the end, where they can be
- * shown again.
+ * DESIGN.md `CategoryItem` list (Live TV, Movies, Series): built-in entries,
+ * then the provider's categories with their counts. Providers send hundreds,
+ * so the list is virtualised. Each category can be hidden (the eye button on
+ * hover or focus); hidden ones collect under "Hidden" at the end, where they
+ * can be shown again.
  */
-export function CategoryList() {
-  const categories = useLive((s) => s.categories);
-  const hidden = useLive((s) => s.hiddenCategories);
-  const active = useLive((s) => s.categoryId);
+export function CategoryList({
+  categories,
+  hidden,
+  activeId: active,
+  onSelect,
+  onSetHidden,
+}: CategoryListProps) {
   const [showHidden, setShowHidden] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
 
@@ -65,7 +77,12 @@ export function CategoryList() {
                 style={{ transform: `translateY(${row.start}px)`, height: ITEM }}
               >
                 {item.type === "category" ? (
-                  <CategoryItem category={item.category} active={item.category.id === active} />
+                  <CategoryItem
+                    category={item.category}
+                    active={item.category.id === active}
+                    onSelect={onSelect}
+                    onSetHidden={onSetHidden}
+                  />
                 ) : (
                   <button
                     type="button"
@@ -87,7 +104,17 @@ export function CategoryList() {
   );
 }
 
-function CategoryItem({ category, active }: { category: CategoryView; active: boolean }) {
+function CategoryItem({
+  category,
+  active,
+  onSelect,
+  onSetHidden,
+}: {
+  category: CategoryView;
+  active: boolean;
+  onSelect: (id: string) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+}) {
   const { id, name, hidden, builtIn } = category;
   return (
     <div className="group relative">
@@ -96,7 +123,7 @@ function CategoryItem({ category, active }: { category: CategoryView; active: bo
         data-category={id}
         aria-current={active || undefined}
         disabled={hidden}
-        onClick={() => selectCategory(id)}
+        onClick={() => onSelect(id)}
         className={`flex h-10 w-full items-center justify-between gap-2 rounded-control px-3 text-left text-small transition-colors duration-(--duration-hover) ease-out disabled:cursor-default ${
           active
             ? "bg-surface-active font-semibold text-text"
@@ -123,7 +150,7 @@ function CategoryItem({ category, active }: { category: CategoryView; active: bo
           type="button"
           aria-label={hidden ? `Show ${name}` : `Hide ${name}`}
           title={hidden ? "Show category" : "Hide category"}
-          onClick={() => void setHidden(id, !hidden)}
+          onClick={() => onSetHidden(id, !hidden)}
           className={`absolute top-1 right-1 flex size-8 items-center justify-center rounded-chip text-text-muted transition-opacity duration-(--duration-hover) hover:bg-surface-raised hover:text-text focus-visible:opacity-100 ${
             hidden
               ? "opacity-100"

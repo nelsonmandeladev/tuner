@@ -22,9 +22,11 @@ import {
   noTrackChoice,
   pickOf,
   readAccountPref,
+  recordHistory,
   stepChannel,
   trackChoiceKey,
   writeAccountPref,
+  type Episode,
   type LiveChannel,
   type Programme,
   type TrackChoice,
@@ -35,13 +37,39 @@ import { activeClient, activeLibrary, useSession } from "../data/session";
 import { open, retry as retryPlayer, setAudioTrack, setSubtitleTrack, stop } from "./controller";
 import { mpv } from "./mpv";
 import { usePlayer, type Track } from "./store";
-import { catchupSource, liveSource } from "./streams";
+import { catchupSource, liveSource, vodSource } from "./streams";
 
 export type TunerView = "none" | "preview" | "player";
 
+/** A movie or an episode in the player. */
+export interface VodMedia {
+  kind: "vod" | "episode";
+  id: number;
+  /** Container extension, part of the stream URL. */
+  ext: string;
+  /** Movie title, or the episode's title. */
+  title: string;
+  /** Above the title: the year for a movie ("" when unknown), "S2 · E5" for an episode. */
+  detail: string;
+  /** The series, for episodes: next episode, remembered tracks, Back. */
+  series: { id: number; name: string; episodes: Episode[] } | null;
+}
+
+/** The episode offered when one ends (SPEC §6: 10-second countdown, cancel). */
+export interface UpNext {
+  episode: Episode;
+  /** `Date.now()` when it plays by itself, or null when autoplay is off. */
+  playsAt: number | null;
+}
+
 export interface TunerState {
   channelId: number | null;
-  mode: "live" | "catchup";
+  mode: "live" | "catchup" | "vod";
+  /** What plays in "vod" mode. */
+  media: VodMedia | null;
+  /** Where Back goes from the player in "vod" mode (the detail page). */
+  returnTo: string | null;
+  upNext: UpNext | null;
   /** The recorded programme, in catch-up. */
   programme: Programme | null;
   /**
@@ -69,6 +97,9 @@ export interface TunerState {
 export const useTuner = create<TunerState>(() => ({
   channelId: null,
   mode: "live",
+  media: null,
+  returnTo: null,
+  upNext: null,
   programme: null,
   catchupOrigin: null,
   list: [],
@@ -130,6 +161,8 @@ export function tune(channelId: number, { list, requestedAt }: TuneOptions = {})
   set({
     channelId,
     mode: "live",
+    media: null,
+    upNext: null,
     programme: null,
     list: list ?? get().list,
     inUse: null,
@@ -140,6 +173,8 @@ export function tune(channelId: number, { list, requestedAt }: TuneOptions = {})
   schedule(() => {
     if (get().channelId !== channelId || get().mode !== "live") return;
     rememberChannel(channelId);
+    const db = activeLibrary();
+    if (db) void recordHistory(db, "live", channelId, Date.now());
     void open(liveSource(account, channel), { requestedAt: at });
   });
 }
@@ -158,7 +193,16 @@ export async function playCatchup(channelId: number, programme: Programme, reque
   if (!account || !channel) return;
   const at = requestedAt ?? performance.now();
   clearTimeout(trailing);
-  set({ channelId, mode: "catchup", programme, catchupOrigin: null, inUse: null, changedAt: at });
+  set({
+    channelId,
+    mode: "catchup",
+    media: null,
+    upNext: null,
+    programme,
+    catchupOrigin: null,
+    inUse: null,
+    changedAt: at,
+  });
   // The recording starts at its first frame: read mpv's position then. The
   // observed `time-pos` may still hold the previous stream's value.
   const onStart = () =>
@@ -169,7 +213,43 @@ export async function playCatchup(channelId: number, programme: Programme, reque
           set({ catchupOrigin: typeof pos === "number" ? pos : 0 });
       })
       .catch(() => undefined);
-  void open(await catchupSource(account, channel, programme, onStart), { requestedAt: at });
+  await open(await catchupSource(account, channel, programme, onStart), { requestedAt: at });
+}
+
+export interface PlayVodOptions {
+  /** Seconds to start at (resume). */
+  start?: number | null;
+  requestedAt?: number;
+  /** Where Back goes from the player. */
+  returnTo?: string;
+}
+
+/** Plays a movie or an episode (SPEC §5–6). */
+export function playVod(
+  media: VodMedia,
+  { start, requestedAt, returnTo }: PlayVodOptions = {},
+): Promise<void> {
+  const account = useSession.getState().active;
+  if (!account) return Promise.resolve();
+  const at = requestedAt ?? performance.now();
+  clearTimeout(trailing);
+  set({
+    mode: "vod",
+    media,
+    upNext: null,
+    programme: null,
+    inUse: null,
+    changedAt: at,
+    ...(returnTo ? { returnTo } : {}),
+  });
+  const db = activeLibrary();
+  if (db) void recordHistory(db, media.kind, media.id, Date.now());
+  return open(vodSource(account, media, start ?? null), { requestedAt: at });
+}
+
+/** Sets or clears the next-episode offer (see vodSession). */
+export function setUpNext(upNext: UpNext | null) {
+  set({ upNext });
 }
 
 /** Adds a typed digit; the jump happens when typing pauses (or on `commitDigits`). */
@@ -238,13 +318,23 @@ export function retry() {
   void retryPlayer();
 }
 
-// --- audio and subtitle tracks, remembered per channel ------------------------
+// --- audio and subtitle tracks, remembered per channel, movie and series ------
+
+/** Where the current stream's track choice is stored: per channel, per movie, per series. */
+function trackKey(): string | null {
+  const { mode, media, channelId } = get();
+  if (mode === "vod" && media) {
+    return media.series
+      ? trackChoiceKey("series", media.series.id)
+      : trackChoiceKey("vod", media.id);
+  }
+  return channelId === null ? null : trackChoiceKey("live", channelId);
+}
 
 async function saveChoice(update: Partial<TrackChoice>) {
   const db = activeLibrary();
-  const { channelId } = get();
-  if (!db || channelId === null) return;
-  const key = trackChoiceKey("live", channelId);
+  const key = trackKey();
+  if (!db || key === null) return;
   const current = await readAccountPref<TrackChoice>(db, key, noTrackChoice);
   await writeAccountPref(db, key, { ...current, ...update });
 }
@@ -281,32 +371,30 @@ export function cycleSubtitle() {
   if (next !== null) void selectSubtitle(next);
 }
 
-/** After each new stream's track list arrives, applies the channel's remembered choice once. */
-let applyFor: number | null = null;
+/** After each new stream's track list arrives, applies the remembered choice once. */
+let applyFor: string | null = null;
 usePlayer.subscribe((state, prev) => {
-  if (state.loads !== prev.loads) applyFor = get().channelId;
-  const { channelId } = get();
-  if (applyFor === null || applyFor !== channelId) return;
+  if (state.loads !== prev.loads) applyFor = trackKey();
+  const key = trackKey();
+  if (applyFor === null || applyFor !== key) return;
   if (state.audioTracks.length === 0 && state.subtitleTracks.length === 0) return;
   applyFor = null;
   const db = activeLibrary();
   if (!db) return;
-  void readAccountPref<TrackChoice>(db, trackChoiceKey("live", channelId), noTrackChoice).then(
-    (choice) => {
-      if (get().channelId !== channelId) return;
-      const { audioTracks, subtitleTracks } = usePlayer.getState();
-      if (choice.audio) {
-        const id = matchTrack(audioTracks, choice.audio);
-        if (id !== null && !audioTracks.find((t) => t.id === id)?.selected) void setAudioTrack(id);
-      }
-      if (choice.sub === "off") {
-        if (subtitleTracks.some((t) => t.selected)) void setSubtitleTrack("no");
-      } else if (choice.sub) {
-        const id = matchTrack(subtitleTracks, choice.sub);
-        if (id !== null) void setSubtitleTrack(id);
-      }
-    },
-  );
+  void readAccountPref<TrackChoice>(db, key, noTrackChoice).then((choice) => {
+    if (trackKey() !== key) return;
+    const { audioTracks, subtitleTracks } = usePlayer.getState();
+    if (choice.audio) {
+      const id = matchTrack(audioTracks, choice.audio);
+      if (id !== null && !audioTracks.find((t) => t.id === id)?.selected) void setAudioTrack(id);
+    }
+    if (choice.sub === "off") {
+      if (subtitleTracks.some((t) => t.selected)) void setSubtitleTrack("no");
+    } else if (choice.sub) {
+      const id = matchTrack(subtitleTracks, choice.sub);
+      if (id !== null) void setSubtitleTrack(id);
+    }
+  });
 });
 
 /** Seconds into the recording, or null before its first frame. */

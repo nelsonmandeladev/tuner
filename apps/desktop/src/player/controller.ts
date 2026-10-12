@@ -186,7 +186,15 @@ function handleEvent(event: MpvEvent) {
       trace("start-file");
       break;
     case "file-loaded":
-      if (pending && !pending.awaitingStart) pending.openedMs = now - pending.t0;
+      if (pending && !pending.awaitingStart) {
+        pending.openedMs = now - pending.t0;
+        // keep-open=yes pauses mpv at the end of a file, and pause outlives
+        // the file: the next episode (or a live reconnect after an end of
+        // stream) would show its first frame and stay paused (seen in M4).
+        // Unpausing earlier does not stick: the old file is still at its end
+        // and pauses again.
+        if (usePlayer.getState().paused) void mpv.setPause(false);
+      }
       trace("file-loaded");
       break;
     case "video-reconfig":
@@ -296,7 +304,11 @@ function onProperty(name: string, data: unknown) {
     case "duration":
       set({ duration: typeof data === "number" ? data : null });
       break;
+    case "seeking":
+      trace(`seeking ${data === true}`);
+      break;
     case "paused-for-cache":
+      if (pausedForCache !== (data === true)) trace(`paused-for-cache ${data === true}`);
       pausedForCache = data === true;
       set((s) => ({
         buffering: pausedForCache || s.status === "loading" || s.status === "reconnecting",

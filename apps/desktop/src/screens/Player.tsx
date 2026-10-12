@@ -24,6 +24,10 @@ import {
 import { VideoSurface } from "../player/VideoSurface";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 import { NumberEntry } from "./live/NumberEntry";
+import { UpNextCard } from "./player/UpNextCard";
+import { VodFooter } from "./player/VodFooter";
+import { VodHeader } from "./player/VodHeader";
+import { cancelUpNext, playNext } from "../player/vodSession";
 import { ChannelSwitcher } from "./player/ChannelSwitcher";
 import { GuidePanel } from "./player/GuidePanel";
 import { PlayerError } from "./player/PlayerError";
@@ -46,6 +50,8 @@ export function Player() {
   const navigate = useNavigate();
   const channelId = useTuner((s) => s.channelId);
   const mode = useTuner((s) => s.mode);
+  const media = useTuner((s) => s.media);
+  const upNext = useTuner((s) => s.upNext);
   const notice = useTuner((s) => s.notice);
   const status = usePlayer((s) => s.status);
   const shown = usePlayer((s) => s.shown);
@@ -56,7 +62,7 @@ export function Player() {
   const channel = channelOf(channelId);
   useGlobalShortcuts();
 
-  const pinned = guide || menu !== null || status === "error";
+  const pinned = guide || menu !== null || status === "error" || upNext !== null;
   const { visible, wake } = useAutoHide(pinned);
 
   useEffect(() => {
@@ -80,7 +86,11 @@ export function Player() {
 
   usePlayerKeys({ guide, setGuide, setStats, menu, setMenu, back, wake });
 
-  if (!channel) return <Navigate to="/live" replace />;
+  const vod = mode === "vod" ? media : null;
+  if (mode === "vod" ? !vod : !channel) {
+    return <Navigate to={mode === "vod" ? "/movies" : "/live"} replace />;
+  }
+  const artName = vod ? vod.title : channel!.name;
 
   return (
     <div
@@ -108,7 +118,7 @@ export function Player() {
     >
       <VideoSurface className="absolute inset-0" />
       {(!shown || status === "idle") && (
-        <GeneratedArt name={channel.name} className="absolute inset-0" />
+        <GeneratedArt name={artName} className="absolute inset-0" />
       )}
 
       <div
@@ -122,17 +132,30 @@ export function Player() {
           if (event.target === event.currentTarget) void toggleFullscreen();
         }}
       >
-        <PlayerHeader channel={channel} mode={mode} onBack={back} />
-        {!guide && mode === "live" && <ChannelSwitcher channelId={channel.id} list={list} />}
-        <PlayerFooter
-          channel={channel}
-          menu={menu}
-          setMenu={setMenu}
-          onGuide={() => setGuide((g) => !g)}
-        />
+        {vod ? (
+          <>
+            <VodHeader media={vod} onBack={back} />
+            <VodFooter media={vod} menu={menu} setMenu={setMenu} />
+          </>
+        ) : (
+          <>
+            <PlayerHeader
+              channel={channel!}
+              mode={mode === "catchup" ? "catchup" : "live"}
+              onBack={back}
+            />
+            {!guide && mode === "live" && <ChannelSwitcher channelId={channel!.id} list={list} />}
+            <PlayerFooter
+              channel={channel!}
+              menu={menu}
+              setMenu={setMenu}
+              onGuide={() => setGuide((g) => !g)}
+            />
+          </>
+        )}
       </div>
 
-      {guide && (
+      {guide && channel && (
         <GuidePanel
           channelId={channel.id}
           onClose={() => setGuide(false)}
@@ -143,6 +166,7 @@ export function Player() {
         />
       )}
       {stats && <StatsPanel />}
+      {vod && <UpNextCard />}
       {status === "error" && <PlayerError onBack={back} />}
       <NumberEntry onVideo />
       <Toast message={reconnecting ? "Reconnecting…" : notice} />
@@ -180,7 +204,7 @@ interface KeyContext {
   wake: () => void;
 }
 
-/** SPEC "Player" keyboard shortcuts that apply to live and catch-up. */
+/** SPEC "Player" keyboard shortcuts: live, catch-up, movies and episodes. */
 function usePlayerKeys(context: KeyContext) {
   const ref = useRef(context);
   useEffect(() => {
@@ -207,23 +231,27 @@ function usePlayerKeys(context: KeyContext) {
         f: () => void toggleFullscreen(),
         Escape: () => {
           if (menu) setMenu(null);
+          else if (tuner.upNext) cancelUpNext();
           else if (guide) setGuide(() => false);
           else if (tuner.digits) cancelDigits();
           else back();
         },
-        ArrowUp: () => zap(-1, at),
-        ArrowDown: () => zap(1, at),
-        ArrowLeft: () => tuner.mode === "catchup" && void seekBy(-10),
-        ArrowRight: () => tuner.mode === "catchup" && void seekBy(10),
-        Enter: () => tuner.digits && commitDigits(at),
+        ArrowUp: () => tuner.mode !== "vod" && zap(-1, at),
+        ArrowDown: () => tuner.mode !== "vod" && zap(1, at),
+        ArrowLeft: () => tuner.mode !== "live" && void seekBy(-10),
+        ArrowRight: () => tuner.mode !== "live" && void seekBy(10),
+        Enter: () => {
+          if (tuner.upNext) playNext(at);
+          else if (tuner.digits) commitDigits(at);
+        },
         Backspace: () => tuner.digits && cancelDigits(),
         m: toggleUserMute,
         a: cycleAudio,
         s: cycleSubtitle,
-        g: () => setGuide((open) => !open),
+        g: () => tuner.mode !== "vod" && setGuide((open) => !open),
         i: () => setStats((open) => !open),
       };
-      if (/^\d$/.test(key)) {
+      if (/^\d$/.test(key) && tuner.mode !== "vod") {
         event.preventDefault();
         typeDigit(key);
         return;
