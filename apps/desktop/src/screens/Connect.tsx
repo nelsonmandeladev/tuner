@@ -1,18 +1,21 @@
 import { LockIcon } from "@hugeicons/core-free-icons";
 import { useRef, useState, type FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 import { APP_NAME } from "../app/brand";
 import { Button } from "../components/Button";
 import { Icon } from "../components/Icon";
 import { Logo } from "../components/Logo";
 import { TextField } from "../components/TextField";
-import { connect, syncActive, type ConnectError } from "../data/session";
+import { leaveActiveAccount } from "../data/accounts";
+import { connect, syncActive, useSession, type ConnectError } from "../data/session";
 import { connectErrorMessage } from "./connect/messages";
 import { SyncProgress } from "./connect/SyncProgress";
 
 /**
  * Connect your subscription (SPEC §1, design/screens/Connect.dc.html): an art
  * panel and the Xtream login. After a valid login the right side shows the
- * first sync.
+ * first sync. With `?add=1` (Settings, the sidebar switcher) it adds another
+ * subscription and can be cancelled.
  */
 export function Connect() {
   const [stage, setStage] = useState<"form" | "sync">("form");
@@ -67,6 +70,10 @@ function ArtPanel() {
 }
 
 function ConnectForm({ onConnected }: { onConnected: () => void }) {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const hasAccount = useSession((s) => s.accounts.length > 0);
+  const adding = hasAccount && params.get("add") === "1";
   const [server, setServer] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -81,6 +88,8 @@ function ConnectForm({ onConnected }: { onConnected: () => void }) {
     setBusy(true);
     setError(null);
     abort.current = new AbortController();
+    // The new subscription becomes the one in use: leave the current one cleanly first.
+    if (useSession.getState().active) await leaveActiveAccount();
     const result = await connect({ server, username, password, name }, abort.current.signal);
     setBusy(false);
     if (result.ok) onConnected();
@@ -96,7 +105,9 @@ function ConnectForm({ onConnected }: { onConnected: () => void }) {
       noValidate
     >
       <div className="flex flex-col gap-2">
-        <h2 className="text-title">Connect your subscription</h2>
+        <h2 className="text-title">
+          {adding ? "Add a subscription" : "Connect your subscription"}
+        </h2>
         <p className="text-body text-text-muted">Use your Xtream Codes login.</p>
       </div>
 
@@ -193,6 +204,11 @@ function ConnectForm({ onConnected }: { onConnected: () => void }) {
         <Button type="submit" size="lg" busy={busy}>
           {busy ? "Connecting…" : "Connect"}
         </Button>
+        {adding && (
+          <Button size="lg" variant="ghost" disabled={busy} onClick={() => void navigate(-1)}>
+            Cancel
+          </Button>
+        )}
         <p className="flex items-center gap-2 text-caption text-text-faint">
           <Icon icon={LockIcon} size={14} />
           Your password stays in this computer’s keychain.

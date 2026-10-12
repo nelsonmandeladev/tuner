@@ -9,7 +9,7 @@ import { flushResume } from "../player/vodSession";
 import { resetTuner, stopPlayback } from "../player/tuner";
 import { removeAccount, switchAccount, useSession, type RemovedFiles } from "./session";
 
-async function leaveActiveAccount() {
+export async function leaveActiveAccount() {
   await flushResume();
   await stopPlayback();
   // Stopping records the last position once more; wait for that write too.
