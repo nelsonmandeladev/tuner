@@ -46,6 +46,10 @@ export interface OpenOptions {
   requestedAt?: number;
 }
 
+/** Shown when mpv cannot start at all (not a stream problem). */
+export const PLAYER_START_FAILED =
+  "The video player could not start on this computer. Reinstall Tuner, then try again.";
+
 const MAX_RECONNECTS = 3;
 const BACKOFF_MS = [1000, 2000, 4000] as const;
 const STABLE_AFTER_MS = 15_000;
@@ -98,7 +102,22 @@ export function startPlayer(): Promise<void> {
 
 export async function open(source: PlayerSource, { requestedAt }: OpenOptions = {}) {
   const t0 = requestedAt ?? performance.now();
-  await startPlayer();
+  try {
+    await startPlayer();
+  } catch (error) {
+    // libmpv could not be loaded or created (a missing runtime DLL on a clean
+    // PC, seen in M6): say so instead of loading forever. Retry tries again.
+    trace(`player start failed: ${String(error)}`);
+    current = source;
+    set({
+      status: "error",
+      label: source.label,
+      live: source.live,
+      buffering: false,
+      error: PLAYER_START_FAILED,
+    });
+    return;
+  }
   clearTimers();
   const { status } = usePlayer.getState();
   const zapping = status === "playing" || status === "loading" || status === "reconnecting";
