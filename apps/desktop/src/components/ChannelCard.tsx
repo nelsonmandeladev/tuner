@@ -32,23 +32,26 @@ export const ChannelCard = memo(function ChannelCard({ channel, now, onOpen }: C
           <span className="font-mono text-mono text-text-dim">{channel.num ?? ""}</span>
         </span>
       </span>
-      {loading ? (
-        <span className="flex h-9 flex-col gap-2 pt-1" aria-hidden>
-          <span className="h-3 w-4/5 rounded-full bg-surface-raised" />
-          <span className="h-3 w-1/2 rounded-full bg-surface-raised" />
+      {/* The programme takes its own height (two lines at most) and the bar sits under it;
+          the bar keeps to the bottom so cards side by side stay level (M5 review). */}
+      <span className="flex flex-1 flex-col gap-2.5">
+        {loading ? (
+          <span className="flex h-4.5 items-center" aria-hidden>
+            <span className="h-3 w-4/5 rounded-full bg-surface-raised" />
+          </span>
+        ) : (
+          <span
+            className={`line-clamp-2 min-h-4.5 text-caption ${current ? "text-text-2" : "text-text-dim"}`}
+          >
+            {current?.title ?? (channel.epgChannelId ? "" : "No guide for this channel")}
+          </span>
+        )}
+        <span className="mt-auto block h-0.75 rounded-full bg-track">
+          <span
+            className="block h-full rounded-full bg-text-muted"
+            style={{ width: `${current ? Math.round(progressOf(current, now) * 100) : 0}%` }}
+          />
         </span>
-      ) : (
-        <span
-          className={`line-clamp-2 h-9 text-caption ${current ? "text-text-2" : "text-text-dim"}`}
-        >
-          {current?.title ?? (channel.epgChannelId ? "" : "No guide for this channel")}
-        </span>
-      )}
-      <span className="block h-0.75 rounded-full bg-track">
-        <span
-          className="block h-full rounded-full bg-text-muted"
-          style={{ width: `${current ? Math.round(progressOf(current, now) * 100) : 0}%` }}
-        />
       </span>
     </button>
   );
