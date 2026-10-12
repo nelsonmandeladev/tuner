@@ -5,6 +5,7 @@
  */
 
 import type { SqlAdapter } from "../adapters";
+import { foldText } from "../text";
 import { RESUME_MIN_SECS, type ResumePoint } from "../vod/resume";
 import type { Episode } from "../xtream/schemas";
 import { insertRows } from "./insert";
@@ -468,4 +469,82 @@ export async function readInProgress(db: SqlAdapter, limit: number): Promise<InP
     });
   }
   return items.sort((a, b) => b.point.updatedAt - a.point.updatedAt).slice(0, limit);
+}
+
+/** A movie or series a person is credited in. */
+export interface PersonCredit {
+  kind: "vod" | "series";
+  id: number;
+  name: string;
+  image: string | null;
+  releaseDate: string | null;
+  role: "director" | "cast";
+}
+
+/** True when `person` is one of the comma-separated names in `list` (accents and case ignored). */
+function credits(list: string | null | undefined, person: string): boolean {
+  if (!list) return false;
+  return list.split(",").some((name) => foldText(name) === person);
+}
+
+/**
+ * Titles that credit a person (a detail page's cast). The list API carries
+ * cast and director for series only; movies are known once their details
+ * were fetched (opened at least once), so movies come from the details cache.
+ */
+export async function readPersonCredits(db: SqlAdapter, person: string): Promise<PersonCredit[]> {
+  const folded = foldText(person);
+  if (folded === "") return [];
+  const [series, movies] = await Promise.all([
+    db.select<{
+      id: number;
+      name: string;
+      cover: string | null;
+      release_date: string | null;
+      cast_names: string | null;
+      director: string | null;
+    }>(
+      // SQLite's LIKE cannot ignore accents: the few thousand rows are matched here instead.
+      `SELECT id, name, cover, release_date, cast_names, director FROM series
+       WHERE cast_names IS NOT NULL OR director IS NOT NULL ORDER BY position`,
+    ),
+    db.select<{ id: number; name: string; icon: string | null; json: string }>(
+      `SELECT v.id, v.name, v.icon, d.json FROM details_cache d JOIN vod v ON v.id = d.id
+       WHERE d.kind = 'vod' ORDER BY v.position`,
+    ),
+  ]);
+  const found: PersonCredit[] = [];
+  for (const m of movies) {
+    let info: { cast?: string | null; director?: string | null; releaseDate?: string | null };
+    try {
+      info = JSON.parse(m.json) as typeof info;
+    } catch {
+      continue;
+    }
+    const role = credits(info.director, folded) ? "director" : credits(info.cast, folded) ? "cast" : null;
+    if (role) {
+      found.push({
+        kind: "vod",
+        id: Number(m.id),
+        name: m.name,
+        image: m.icon,
+        releaseDate: info.releaseDate ?? null,
+        role,
+      });
+    }
+  }
+  for (const s of series) {
+    const role = credits(s.director, folded) ? "director" : credits(s.cast_names, folded) ? "cast" : null;
+    if (role) {
+      found.push({
+        kind: "series",
+        id: Number(s.id),
+        name: s.name,
+        image: s.cover,
+        releaseDate: s.release_date,
+        role,
+      });
+    }
+  }
+  return found;
 }

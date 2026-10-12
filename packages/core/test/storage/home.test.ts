@@ -16,7 +16,9 @@ import { accountMigrations } from "../../src/storage/migrations";
 import {
   readEpisodes,
   readInProgress,
+  readPersonCredits,
   readRelatedVod,
+  writeDetail,
   readRecentSeries,
   readRecentVod,
   recordHistory,
@@ -178,6 +180,31 @@ describe("home reads", () => {
     });
     expect(first.point).toEqual(point(300, 3000));
     expect((await readInProgress(db, 1)).map((i) => i.id)).toEqual([201]);
+  });
+
+  it("finds the titles that credit a person, in series and in cached movie details", async () => {
+    const db = await library();
+    await db.transaction(async (tx) => {
+      replaceSeries(tx, [
+        { ...show(20, 50), cast: "Ana Lima, Bo Ek", director: null },
+        { ...show(21, 70), cast: "Anabel Limao", director: "Ana Lima" },
+        { ...show(22, 80), cast: "Zed 100%_" },
+      ]);
+    });
+    await writeDetail(db, "vod", 10, { cast: "Bo Ek, ÁNA LIMA", releaseDate: "2021-01-01" }, 1);
+    await writeDetail(db, "vod", 11, { cast: "Someone Else" }, 1);
+    const found = await readPersonCredits(db, "Ana Lima");
+    expect(found.map((f) => `${f.kind}:${f.id}:${f.role}`)).toEqual([
+      "vod:10:cast",
+      "series:20:cast",
+      "series:21:director",
+    ]);
+    expect(found[0]).toMatchObject({ name: "Movie 10", releaseDate: "2021-01-01" });
+    // An exact name, not a part of another one.
+    expect(await readPersonCredits(db, "Ana")).toEqual([]);
+    // LIKE wildcards in a name are taken literally.
+    expect((await readPersonCredits(db, "Zed 100%_")).map((f) => f.id)).toEqual([22]);
+    expect(await readPersonCredits(db, "  ")).toEqual([]);
   });
 
   it("returns nothing for a fresh account", async () => {
