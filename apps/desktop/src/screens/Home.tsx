@@ -49,12 +49,12 @@ export function Home() {
   const recentSeries = useHome((s) => s.recentSeries);
   const counts = useSession((s) => s.counts);
   const accountId = useSession((s) => s.active?.id);
-  const syncing = useSession((s) => s.sync.running);
+  const libraryVersion = useSession((s) => s.libraryVersion);
   const now = useNow();
 
   useEffect(() => {
     void loadHome();
-  }, [accountId, syncing]);
+  }, [accountId, libraryVersion]);
 
   useLayoutEffect(() => {
     if (status === "ready") requestAnimationFrame(markHomePainted);

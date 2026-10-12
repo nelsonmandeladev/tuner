@@ -47,6 +47,16 @@ let sourceAccount: string | null = null;
 /** Guide ids of channels read without the whole Live TV list (Home's cards). */
 const knownGuides = new Map<number, string | null>();
 
+// Another account: its channel ids mean other channels. Forget everything.
+useSession.subscribe((state, prev) => {
+  if (state.active?.id === prev.active?.id) return;
+  fetchedAt.clear();
+  queue.length = 0;
+  knownGuides.clear();
+  sourcePromise = null;
+  useEpg.setState({ schedules: new Map(), source: null });
+});
+
 /** Tells the EPG about channels a screen read itself, so it knows which have a guide. */
 export function knowChannels(channels: readonly LiveChannel[]) {
   for (const channel of channels) knownGuides.set(channel.id, channel.epgChannelId);

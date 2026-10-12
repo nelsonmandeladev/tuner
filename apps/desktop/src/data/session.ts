@@ -4,14 +4,18 @@
  * provider or the databases goes through @tuner/core here (CLAUDE.md rule 6).
  */
 
+import { invoke } from "@tauri-apps/api/core";
 import {
+  DEFAULT_REFRESH_HOURS,
   XtreamClient,
   XtreamError,
   accountDbName,
   accountMigrations,
   appMigrations,
+  deleteAccountRow,
   getSetting,
   insertAccount,
+  libraryIsStale,
   listAccounts,
   loadCredentials,
   markAccountSynced,
@@ -23,6 +27,7 @@ import {
   secretKey,
   setSetting,
   syncLibrary,
+  updateAccountDetails,
   updateAccountInfo,
   type Account,
   type AccountInfo,
@@ -57,6 +62,13 @@ export interface SessionState {
   counts: LibraryCounts | null;
   syncState: ListSyncState[];
   sync: SyncView;
+  /**
+   * Bumped each time a sync step replaces a list: screens holding a list read
+   * it again (quietly, keeping what they show until the new one is in).
+   */
+  libraryVersion: number;
+  /** What the last launch check decided (dev checks). */
+  lastRefresh: { at: number; reason: "stale" | "manual" | "skipped" } | null;
 }
 
 const idleSync = (): SyncView => ({
@@ -81,20 +93,27 @@ export const useSession = create<SessionState>(() => ({
   counts: null,
   syncState: [],
   sync: idleSync(),
+  libraryVersion: 0,
+  lastRefresh: null,
 }));
 
 const set = useSession.setState;
 const ACTIVE_ACCOUNT = "activeAccountId";
 
-let appDb: SqlAdapter | null = null;
+let appDb: Promise<SqlAdapter> | null = null;
 let libraryDb: SqlAdapter | null = null;
 
-async function app(): Promise<SqlAdapter> {
-  if (!appDb) {
-    const db = await openDatabase("app.db");
-    await migrate(db, appMigrations);
-    appDb = db;
-  }
+/** app.db, opened and migrated once (boot and the settings read it at the same time). */
+function app(): Promise<SqlAdapter> {
+  appDb ??= openDatabase("app.db")
+    .then(async (db) => {
+      await migrate(db, appMigrations);
+      return db;
+    })
+    .catch((error: unknown) => {
+      appDb = null;
+      throw error;
+    });
   return appDb;
 }
 
@@ -102,7 +121,16 @@ async function openLibrary(account: Account): Promise<SqlAdapter> {
   const db = await openDatabase(accountDbName(account.id));
   await migrate(db, accountMigrations);
   libraryDb = db;
+  libraryAccount = account.id;
   return db;
+}
+
+/** The account whose database `libraryDb` is. */
+let libraryAccount: string | null = null;
+
+/** Closes an account's database pool (another account is now active). */
+function closeLibrary(accountId: string) {
+  void invoke("account_db_unload", { account: accountId }).catch(() => undefined);
 }
 
 async function refreshLibrary() {
@@ -191,6 +219,7 @@ export type ConnectResult =
  * same server and username again updates that account instead of adding one.
  */
 export async function connect(form: ConnectForm, signal?: AbortSignal): Promise<ConnectResult> {
+  const previous = libraryAccount;
   const server = normalizeServer(form.server);
   if (!server) return { ok: false, error: "invalid-server" };
   const username = form.username.trim();
@@ -236,6 +265,7 @@ export async function connect(form: ConnectForm, signal?: AbortSignal): Promise<
     }
     await setSetting(db, ACTIVE_ACCOUNT, account.id);
     await openLibrary(account);
+    if (previous && previous !== account.id) closeLibrary(previous);
     const accounts = await listAccounts(db);
     set({
       accounts,
@@ -287,7 +317,10 @@ async function runSync() {
             },
           },
         }));
-        if (event.phase === "done") void refreshLibrary();
+        if (event.phase === "done") {
+          set((s) => ({ libraryVersion: s.libraryVersion + 1 }));
+          void refreshLibrary();
+        }
       },
     });
     const at = Date.now();
@@ -316,4 +349,173 @@ async function runSync() {
   } finally {
     await refreshLibrary();
   }
+}
+
+// --- several accounts (SPEC §1, Settings → Accounts) ---------------------------
+
+/**
+ * Makes another account the active one: its library opens, the previous one
+ * closes, and every screen reads the new account (stores key their data by
+ * account id). The caller stops playback first: the stream belongs to the
+ * old account (CLAUDE.md rule 5).
+ */
+export async function switchAccount(id: string): Promise<void> {
+  const { active } = useSession.getState();
+  if (active?.id === id) return;
+  await syncing;
+  const db = await app();
+  const accounts = await listAccounts(db);
+  const next = accounts.find((a) => a.id === id);
+  if (!next) return;
+  const previous = libraryAccount;
+  await setSetting(db, ACTIVE_ACCOUNT, next.id);
+  clientFor = null;
+  await openLibrary(next);
+  set({ accounts, active: next, counts: null, syncState: [], sync: idleSync() });
+  if (previous && previous !== next.id) closeLibrary(previous);
+  await refreshLibrary();
+  void refreshIfStale();
+}
+
+export type EditError = ConnectError | "duplicate";
+
+export type EditResult = { ok: true } | { ok: false; error: EditError; status?: string | null };
+
+/**
+ * Saves Settings → Accounts → Edit. A new server, username or password is
+ * checked with the provider first (account info), with the password from
+ * the form or, when left empty, the keychain. A new name alone needs no network.
+ */
+export async function editAccount(
+  id: string,
+  form: ConnectForm,
+  signal?: AbortSignal,
+): Promise<EditResult> {
+  const db = await app();
+  const accounts = await listAccounts(db);
+  const account = accounts.find((a) => a.id === id);
+  if (!account) return { ok: false, error: "storage" };
+  const server = normalizeServer(form.server);
+  if (!server) return { ok: false, error: "invalid-server" };
+  const username = form.username.trim();
+  if (!username) return { ok: false, error: "missing-fields" };
+  if (accounts.some((a) => a.id !== id && a.server === server && a.username === username)) {
+    return { ok: false, error: "duplicate" };
+  }
+
+  const loginChanged =
+    server !== account.server || username !== account.username || form.password !== "";
+  let info: AccountInfo | null = null;
+  if (loginChanged) {
+    const password = form.password || (await keychain.get(secretKey(id)));
+    if (!password) return { ok: false, error: "missing-fields" };
+    try {
+      info = await new XtreamClient(tauriHttp, { server, username, password }).accountInfo(signal);
+    } catch (error) {
+      if (error instanceof XtreamError)
+        return { ok: false, error: error.kind, status: error.status };
+      return { ok: false, error: "bad-response" };
+    }
+  }
+  try {
+    if (form.password) await keychain.set(secretKey(id), form.password);
+    await updateAccountDetails(db, id, {
+      name: form.name.trim() || account.name,
+      server,
+      username,
+    });
+    if (info) await updateAccountInfo(db, id, info);
+  } catch {
+    return { ok: false, error: "storage" };
+  }
+  if (loginChanged) clientFor = null;
+  const updated = await listAccounts(db);
+  set((s) => ({
+    accounts: updated,
+    active: s.active?.id === id ? (updated.find((a) => a.id === id) ?? s.active) : s.active,
+  }));
+  return { ok: true };
+}
+
+/** What removing an account deleted (account_remove in src-tauri/src/accounts.rs). */
+export interface RemovedFiles {
+  files: string[];
+  /** Bytes of shared image cache cleared. */
+  images: number;
+}
+
+/**
+ * Removes an account and everything it stored: its row, database files,
+ * search index, password and the image cache. The next account becomes
+ * active, or the app goes back to Connect after the last one. The caller
+ * stops playback first.
+ */
+export async function removeAccount(id: string): Promise<RemovedFiles> {
+  await syncing;
+  const db = await app();
+  const accounts = await listAccounts(db);
+  const wasActive = useSession.getState().active?.id === id;
+  const next = accounts.find((a) => a.id !== id) ?? null;
+  if (wasActive) {
+    clientFor = null;
+    if (next) {
+      await setSetting(db, ACTIVE_ACCOUNT, next.id);
+      await openLibrary(next);
+    } else {
+      libraryDb = null;
+      libraryAccount = null;
+    }
+  }
+  await deleteAccountRow(db, id);
+  const removed = await invoke<RemovedFiles>("account_remove", { account: id });
+  const remaining = await listAccounts(db);
+  if (!wasActive) {
+    set({ accounts: remaining });
+    return removed;
+  }
+  set({
+    accounts: remaining,
+    active: next,
+    counts: null,
+    syncState: [],
+    sync: idleSync(),
+    ...(next ? {} : { phase: "no-account" as const }),
+  });
+  if (next) {
+    await refreshLibrary();
+    void refreshIfStale();
+  }
+  return removed;
+}
+
+// --- background refresh (SPEC "Refresh strategy") -------------------------------
+
+/** Hours after which the lists are refreshed on launch (Settings → Data); 0 = by hand only. */
+let refreshHours = DEFAULT_REFRESH_HOURS;
+export function setRefreshHours(hours: number) {
+  refreshHours = hours;
+}
+
+/**
+ * Refreshes the active account's lists in the background when they are older
+ * than the setting (12 h by default). Screens keep the cached lists; each one
+ * is replaced in one transaction and read again when its step is done, and
+ * the search index is rebuilt after (data/search.ts).
+ */
+export async function refreshIfStale(now = Date.now()): Promise<boolean> {
+  const { phase, syncState, sync } = useSession.getState();
+  if (phase !== "ready" || sync.running) return false;
+  if (!libraryIsStale(syncState, refreshHours, now)) {
+    set({ lastRefresh: { at: now, reason: "skipped" } });
+    return false;
+  }
+  set({ lastRefresh: { at: now, reason: "stale" } });
+  await syncActive();
+  return true;
+}
+
+/** Settings → Accounts → Refresh now. */
+export function refreshNow(): Promise<void> {
+  set({ lastRefresh: { at: Date.now(), reason: "manual" } });
+  return syncActive();
 }

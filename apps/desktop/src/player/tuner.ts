@@ -313,6 +313,26 @@ export async function stopPlayback() {
   if (usePlayer.getState().status !== "idle") await stop();
 }
 
+/**
+ * Forgets what was tuned (the active account changed): its channel ids and
+ * titles mean nothing in another library. Stop playback first.
+ */
+export function resetTuner() {
+  clearTimeout(trailing);
+  cancelDigits();
+  set({
+    channelId: null,
+    mode: "live",
+    media: null,
+    returnTo: null,
+    upNext: null,
+    programme: null,
+    catchupOrigin: null,
+    list: [],
+    inUse: null,
+  });
+}
+
 export function retry() {
   set({ inUse: null });
   void retryPlayer();

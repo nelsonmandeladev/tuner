@@ -45,6 +45,13 @@ export function loadFavorites(): Promise<void> {
   return loading;
 }
 
+// Another account: its favorites load on the next read; none of these apply.
+useSession.subscribe((state, prev) => {
+  if (state.active?.id !== prev.active?.id && useFavorites.getState().accountId !== null) {
+    useFavorites.setState({ accountId: null, live: [], vod: [], series: [] });
+  }
+});
+
 export function isFavorite(kind: ContentKind, id: number): boolean {
   return useFavorites.getState()[kind].includes(id);
 }

@@ -44,7 +44,7 @@ export function LiveTV() {
   const navigate = useNavigate();
   const status = useLive((s) => s.status);
   const accountId = useSession((s) => s.active?.id);
-  const syncing = useSession((s) => s.sync.running);
+  const libraryVersion = useSession((s) => s.libraryVersion);
   const selectedId = useLive((s) => s.selectedId);
   const channel = useLive((s) =>
     s.selectedId === null ? null : (s.channels.get(s.selectedId) ?? null),
@@ -59,7 +59,7 @@ export function LiveTV() {
 
   useEffect(() => {
     void loadLive();
-  }, [accountId, syncing]);
+  }, [accountId, libraryVersion]);
 
   useEffect(() => {
     setView("preview");

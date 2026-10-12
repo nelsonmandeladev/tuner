@@ -40,13 +40,13 @@ function Catalog({ store, path }: { store: CatalogStore; path: "/movies" | "/ser
   const sort = store.use((s) => s.sort);
   const progress = store.use((s) => s.progress);
   const accountId = useSession((s) => s.active?.id);
-  const syncing = useSession((s) => s.sync.running);
+  const libraryVersion = useSession((s) => s.libraryVersion);
   const category = categories.find((c) => c.id === categoryId);
   const offsetKey = `${path}|${categoryId}|${sort}`;
 
   useEffect(() => {
     void store.load();
-  }, [store, accountId, syncing]);
+  }, [store, accountId, libraryVersion]);
 
   const label = store.kind === "vod" ? "Movies" : "Series";
   if (status === "error") {

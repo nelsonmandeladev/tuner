@@ -51,6 +51,8 @@ export const FAVORITES = "fav";
 export interface CatalogState {
   status: "idle" | "loading" | "ready" | "error";
   accountId: string | null;
+  /** The session's `libraryVersion` the grid was read at (a sync replaces lists). */
+  version: number;
   loadMs: number | null;
   items: Map<number, PosterItem>;
   categories: CategoryView[];
@@ -89,6 +91,7 @@ function createCatalog(kind: CatalogKind): Catalog {
   const use = create<CatalogState>(() => ({
     status: "idle",
     accountId: null,
+    version: -1,
     loadMs: null,
     items: new Map(),
     categories: [],
@@ -163,13 +166,15 @@ function createCatalog(kind: CatalogKind): Catalog {
   let pending: { categoryId: string; sort: GridSort } | null = null;
 
   async function load() {
-    const { active } = useSession.getState();
+    const { active, libraryVersion } = useSession.getState();
     const db = activeLibrary();
     if (!active || !db) return;
-    if (get().accountId === active.id && get().status === "ready") return;
+    // Read again after a sync, keeping the grid, category and sort on screen meanwhile.
+    const sameAccount = get().accountId === active.id && get().status === "ready";
+    if (sameAccount && get().version === libraryVersion) return;
     loading ??= (async () => {
       const t0 = performance.now();
-      set({ status: "loading" });
+      if (!sameAccount) set({ status: "loading" });
       try {
         const [rows, memberships, categories, categoryId, sort] = await Promise.all([
           kind === "vod"
@@ -196,11 +201,13 @@ function createCatalog(kind: CatalogKind): Catalog {
           providerCategories: categories,
           hidden: new Set(categories.filter((c) => c.hidden).map((c) => c.id)),
         };
+        const keep = sameAccount ? get() : null;
         refresh({
           accountId: active.id,
+          version: libraryVersion,
           items: new Map(rows.map((r) => [r.id, r])),
-          categoryId: pending?.categoryId ?? categoryId,
-          sort: pending?.sort ?? sort,
+          categoryId: pending?.categoryId ?? keep?.categoryId ?? categoryId,
+          sort: pending?.sort ?? keep?.sort ?? sort,
         });
         pending = null;
         set({ status: "ready", loadMs: Math.round(performance.now() - t0) });

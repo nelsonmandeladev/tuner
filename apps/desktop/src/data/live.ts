@@ -32,6 +32,8 @@ export interface LiveState {
   status: "idle" | "loading" | "ready" | "error";
   /** Which account the data belongs to. */
   accountId: string | null;
+  /** The session's `libraryVersion` the data was read at (a sync replaces lists). */
+  version: number;
   /** How long the last load took (dev measurements). */
   loadMs: number | null;
   channels: Map<number, LiveChannel>;
@@ -71,6 +73,7 @@ let index: Index = empty;
 export const useLive = create<LiveState>(() => ({
   status: "idle",
   accountId: null,
+  version: -1,
   loadMs: null,
   channels: new Map(),
   categories: [],
@@ -148,15 +151,20 @@ function refreshList(patch: Partial<LiveState> = {}) {
 
 let loading: Promise<void> | null = null;
 
-/** Loads the active account's live data, once per account. */
+/**
+ * Loads the active account's live data: once per account, and again after a
+ * sync replaced the list. A reload for the same account keeps the list on
+ * screen, the category, the filter and the selection while it reads.
+ */
 export function loadLive(): Promise<void> {
-  const { active } = useSession.getState();
+  const { active, libraryVersion } = useSession.getState();
   const db = activeLibrary();
   if (!active || !db) return Promise.resolve();
-  if (get().accountId === active.id && get().status === "ready") return Promise.resolve();
+  const sameAccount = get().accountId === active.id && get().status === "ready";
+  if (sameAccount && get().version === libraryVersion) return Promise.resolve();
   loading ??= (async () => {
     const t0 = performance.now();
-    set({ status: "loading" });
+    if (!sameAccount) set({ status: "loading" });
     try {
       const [channelRows, memberships, categories, , categoryId, channelId] = await Promise.all([
         readLiveChannels(db),
@@ -184,13 +192,16 @@ export function loadLive(): Promise<void> {
         providerCategories: categories,
         hidden: new Set(categories.filter((c) => c.hidden).map((c) => c.id)),
       };
+      const keep = sameAccount ? get() : null;
+      const selected = keep ? keep.selectedId : channelId;
       refreshList({
         accountId: active.id,
+        version: libraryVersion,
         channels,
         favorites,
-        categoryId,
-        filter: "",
-        selectedId: channelId !== null && channels.has(channelId) ? channelId : null,
+        categoryId: keep ? keep.categoryId : categoryId,
+        filter: keep ? keep.filter : "",
+        selectedId: selected !== null && channels.has(selected) ? selected : null,
       });
       const { list, selectedId } = get();
       set({
@@ -287,11 +298,19 @@ export function resetLive() {
   set({
     status: "idle",
     accountId: null,
+    version: -1,
     channels: new Map(),
     categories: [],
     hiddenCategories: [],
     favorites: [],
     list: [],
     selectedId: null,
+    reveal: null,
   });
 }
+
+// Another account: drop this one's channels at once, so nothing (a zap, a
+// search result) reaches a channel of the old account.
+useSession.subscribe((state, prev) => {
+  if (state.active?.id !== prev.active?.id && get().accountId !== state.active?.id) resetLive();
+});
