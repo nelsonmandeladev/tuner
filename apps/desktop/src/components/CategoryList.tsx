@@ -62,7 +62,7 @@ export function CategoryList({
     <section
       aria-label="Categories"
       data-pane="categories"
-      className="flex min-h-0 flex-col border-r border-line px-3 pt-7"
+      className="flex min-h-0 flex-col border-r border-line px-3"
     >
       <h2 className="mb-3 px-4 text-eyebrow-s text-text-faint uppercase">Categories</h2>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto pb-6" role="list">

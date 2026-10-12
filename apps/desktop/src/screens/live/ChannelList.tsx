@@ -95,7 +95,7 @@ export function ChannelList({ onPick, onOpen, scrollRef }: ChannelListProps) {
     <section
       aria-label="Channels"
       data-pane="channels"
-      className="flex min-h-0 min-w-0 flex-col gap-4 px-5 pt-6"
+      className="flex min-h-0 min-w-0 flex-col gap-4 px-5"
     >
       <div className="relative flex items-center">
         <label htmlFor="channel-filter" className="sr-only">

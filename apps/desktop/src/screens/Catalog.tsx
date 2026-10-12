@@ -75,7 +75,7 @@ function Catalog({ store, path }: { store: CatalogStore; path: "/movies" | "/ser
         onSelect={store.selectCategory}
         onSetHidden={(id, on) => void store.setHidden(id, on)}
       />
-      <section aria-label={label} className="flex min-h-0 min-w-0 flex-col gap-5 pt-7">
+      <section aria-label={label} className="flex min-h-0 min-w-0 flex-col gap-5">
         <div className="flex flex-wrap items-center justify-between gap-4 px-8">
           <div className="flex min-w-0 items-baseline gap-3">
             <h1 className="truncate text-title">{category?.name ?? label}</h1>

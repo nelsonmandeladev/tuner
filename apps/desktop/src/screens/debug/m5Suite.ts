@@ -670,7 +670,7 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
           content + scrollbar === 1112,
         ],
         [`sidebar ${round(sidebar.width)}`, near(sidebar.width, 248)],
-        [`padding ${css(home, "padding")}`, css(home, "padding") === "32px 40px 48px"],
+        [`padding ${css(home, "padding")}`, css(home, "padding") === "0px 40px 48px"],
         [
           `hero ${round(heroBox.width)}×${round(heroBox.height)}`,
           near(heroBox.height, 380) && near(heroBox.width, content),

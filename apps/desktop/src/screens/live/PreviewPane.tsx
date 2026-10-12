@@ -37,14 +37,14 @@ export function PreviewPane({ channel, onWatch, onCatchup }: PreviewPaneProps) {
   const { now: current, upcoming } = nowNext(schedule ?? [], now);
 
   if (!channel) {
-    return <section aria-label="Preview" className="pt-6 pr-7 pb-6 pl-2" />;
+    return <section aria-label="Preview" className="pr-7 pb-6 pl-2" />;
   }
 
   return (
     <section
       aria-label="Preview"
       data-pane="preview"
-      className="flex min-h-0 min-w-0 flex-col gap-5 pt-6 pr-7 pl-2"
+      className="flex min-h-0 min-w-0 flex-col gap-5 pr-7 pl-2"
     >
       <PreviewVideo channel={channel} />
 

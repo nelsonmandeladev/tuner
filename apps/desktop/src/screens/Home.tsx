@@ -107,7 +107,7 @@ export function Home() {
   const resume = (item: InProgress) => void resumeInPlayer(navigate, item);
 
   return (
-    <div className="flex flex-col gap-10 px-10 pt-8 pb-12" data-home>
+    <div className="flex flex-col gap-10 px-10 pb-12" data-home>
       {hero && <Hero hero={hero} onResume={() => resume(hero.item)} />}
 
       {favoriteChannels.length > 0 && (
@@ -334,7 +334,7 @@ function PosterRow({
 /** Loading (DESIGN.md "States"): the hero and a row of cards in their final shapes. */
 function HomeSkeleton() {
   return (
-    <div className="flex flex-col gap-10 px-10 pt-8 pb-12" aria-busy aria-label="Loading Home">
+    <div className="flex flex-col gap-10 px-10 pb-12" aria-busy aria-label="Loading Home">
       <div className="h-95 rounded-hero bg-surface" />
       <div className="flex flex-col gap-4">
         <div className="h-6.5 w-52 rounded-full bg-surface" />
