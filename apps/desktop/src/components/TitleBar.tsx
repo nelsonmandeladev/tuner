@@ -9,10 +9,11 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType } from "react-router";
 import { shortcutLabel } from "../app/platform";
-import { toggleSidebar, useLayout } from "../app/layout";
+import { SIDEBAR_WIDTH, sidebarTransition, toggleSidebar, useLayout } from "../app/layout";
 import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 
@@ -30,15 +31,33 @@ export function TitleBar() {
   const { pathname } = useLocation();
   const bare = BARE_ROUTES.some((route) => pathname.startsWith(route));
   const sidebarOpen = useLayout((s) => s.sidebarOpen);
+  const reduceMotion = useReducedMotion();
   const history = useHistoryEnds();
   const navigate = useNavigate();
 
   return (
     <header
       data-tauri-drag-region
-      className="flex h-10 flex-none items-center gap-1 border-b border-line bg-bg-sidebar pl-2 text-text select-none"
+      className="relative isolate flex h-10 flex-none items-center gap-1 pl-2 text-text select-none"
       data-titlebar
     >
+      {/* Over the sidebar the bar takes its colour and its right border runs on up,
+          so the window shows one line from top to bottom (M5 review, like Claude). */}
+      {!bare && (
+        <motion.div
+          aria-hidden
+          className="absolute inset-y-0 left-0 -z-10 overflow-hidden"
+          initial={false}
+          animate={{ width: sidebarOpen ? SIDEBAR_WIDTH : 0 }}
+          transition={sidebarTransition(sidebarOpen, reduceMotion)}
+        >
+          <div
+            data-tauri-drag-region
+            className="h-full border-r border-line bg-bg-sidebar"
+            style={{ width: SIDEBAR_WIDTH }}
+          />
+        </motion.div>
+      )}
       {!bare && (
         <>
           <BarButton

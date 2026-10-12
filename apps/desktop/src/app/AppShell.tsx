@@ -1,13 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { Outlet, useLocation } from "react-router";
 import { Sidebar } from "../components/Sidebar";
-import { useLayout } from "./layout";
-
-/** The sidebar's width (DESIGN.md "Spacing and sizes"). */
-const SIDEBAR_WIDTH = 248;
-/** Panel in/out (DESIGN.md "Motion"). */
-const sidebarIn = { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] } as const;
-const sidebarOut = { duration: 0.15, ease: "easeIn" } as const;
+import { SIDEBAR_WIDTH, sidebarTransition, useLayout } from "./layout";
 
 /** Screen change: 180 ms fade with an 8 px rise (DESIGN.md "Motion"). */
 const screenTransition = { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] } as const;
@@ -24,7 +18,7 @@ export function AppShell() {
         className="flex-none overflow-hidden"
         initial={false}
         animate={{ width: sidebarOpen ? SIDEBAR_WIDTH : 0 }}
-        transition={reduceMotion ? { duration: 0 } : sidebarOpen ? sidebarIn : sidebarOut}
+        transition={sidebarTransition(sidebarOpen, reduceMotion)}
         inert={!sidebarOpen}
         data-sidebar-open={sidebarOpen}
       >
