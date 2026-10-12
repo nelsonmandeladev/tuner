@@ -27,6 +27,7 @@ Put these in `apps/desktop/src/styles/tokens.css` as CSS custom properties. Comp
 | `--text-placeholder` | `#6E7471` | Input placeholders only |
 | `--accent` | `#F2A93B` | Primary buttons, progress fill, eyebrow labels, links |
 | `--accent-hover` | `#FFD08A` | Link hover |
+| `--accent-ink` | `#F2A93B` (light: `#8F5300`) | Accent as text or a stroke icon: ticks, "See all", "11 min left", step icons (M6). The accent itself in dark |
 | `--on-accent` | `#1A1204` | Text and icons on accent fills |
 | `--live` | `#F0503C` | LIVE dot only |
 | `--overlay` | `rgba(5,6,6,0.6)` | Chips on video |
@@ -45,7 +46,7 @@ Put these in `apps/desktop/src/styles/tokens.css` as CSS custom properties. Comp
 | `--scrim-player` | gradient, `Player.dc.html` | Top and bottom scrim of the player overlay |
 | `--art-0…7-tint/shape` | the hash palette below | Generated art and monogram tiles |
 
-Light theme: not designed yet. In M6, derive light tokens with the same roles, keep the accent, darken it for text if contrast fails, and ask the user to review.
+Light theme (M6, Settings → Appearance; awaiting the user's review): see "Light theme" below.
 
 ### Type
 
@@ -99,6 +100,9 @@ Sidebar 248 wide · nav item 44 high · primary button 48 (52 on Connect) · ico
 | `Badge` | Rows, player | `LIVE` (red dot + text on `--overlay`), `Catch-up` (outline), stream info chip (mono) |
 | `PlayerOverlay` | Player | Top: back, logo, name, number; LIVE + stream info. Right: channel switcher (prev/current/next). Bottom: eyebrow "Now", title, next, progress with times, controls |
 | `Kbd` | Sidebar, player | Mono 12, 1px `--line-strong`, radius 6 |
+| `Switch` | Settings | On/off: a fully rounded 44 × 26 track. On: `--accent` with an `--on-accent` knob. Off: `--surface-raised`, `--line-strong` border, `--text-muted` knob. `role="switch"`, named by its row (M6) |
+| `Select` | Settings | A fully rounded 40-px button (`--surface`, `--line-strong`) with the value and a chevron; the listbox opens under it on `--surface-raised` (radius 12, `--line-strong`), ticks the chosen option in `--accent-ink`. Arrows, Home/End, Enter/Space, Esc (M6) |
+| `Button` `sm` | Settings rows | 40 high, 18 px sides, 14 px text; fully rounded like every button (M6) |
 
 Icons: Hugeicons free stroke-rounded set (D9), 20 px, stroke 1.8, through the `Icon` component. No emoji.
 
@@ -150,6 +154,33 @@ Main.dc.html shows the hero, Favorite channels and Recently added movies. The re
 - **Favorites:** one heart component everywhere (Live TV preview: on a panel with a `--line-strong` border; detail pages: `--ghost` on artwork); off is an outline, on is a filled accent heart. Movies and Series get a "Favorites" category above "All", as Live TV has; empty: "No favorite movies yet. Press the heart on any movie."
 - **Mismatches:** buttons had 20 px sides; both mockups say 22 px, now built at 22 (and fully rounded, see "Radius"). Sidebar and category items have 16 px sides instead of 12 so text clears the round ends. Home's main area shows the thin scrollbar (10 px) when it is taller than the window, so at 1440 × 900 the content is 1102 px wide instead of the mockup's 1112 (cards 209 instead of 211, posters 172 instead of 174).
 - New token: `--scrim-home` (Main.dc.html's hero gradient, slightly lighter than `--scrim-hero`).
+
+### Settings and accounts: what the mockups do not show (M6)
+
+- **Settings page:** the page title, then one column (max 800 px) of five sections: Accounts, Playback, Content, Data, Appearance. Each is an eyebrow heading (`--text-faint`, 12 px) over a `--surface` panel (radius 18, `--line` border) of rows split by `--line`. A row: label (14/600) and one line of explanation (`--text-muted`, 13 px, max 520 px) on the left, the control on the right (Switch, Select, SegmentedControl or a `sm` ghost Button), 18 px vertical padding, 24 px sides.
+- **Accounts:** a row per subscription, the one in use first with an "In use" outline pill: 40-px avatar letter on `--avatar`, name, host (mono, `--text-dim`), then status · expiry · connections · "lists updated 3 h ago". Actions: Refresh now (in use) or Switch to this, Edit, Remove. Remove asks inline in a `--line-strong` box ("Remove …? Its lists, favorites, history and saved password are deleted from this computer. Your subscription itself is not affected." Cancel / Remove). "Add a subscription" (dashed circle with a plus) opens Connect with Cancel. Edit is the 440-px right sheet: Name, Server URL, Username, Password ("Leave empty to keep the saved one"), a note that a new login is checked with the provider, Save / Cancel.
+- **Content:** "Play the next episode automatically" (per subscription), then the hidden categories of every kind in one list (kind eyebrow, name, count in mono, Show), on `--bg` pills; empty: "Nothing is hidden."
+- **Data:** Refresh lists (Every 6 / 12 / 24 hours, Only when I ask) with "Last updated 3 h ago"; Cache with its size ("436 MB of artwork, 152 saved pages and guide entries") and Clear cache; Watch history with an inline confirmation. A one-line note answers each action ("Cache cleared.").
+- **Account switcher:** the sidebar account button opens a menu above it (`--surface-raised`, radius 18, `--line-strong`; 200 ms in, 150 ms out): each subscription (avatar, name, a tick on the one in use), a rule, "Add a subscription", "Manage subscriptions". Arrow keys move, Esc closes. Choosing another subscription goes to its Home.
+- **Pane widths stay app-wide** (they are about the window); the Live TV category, last channel, catalog category and sort, hidden categories, favorites, history, resume points and the search index are per subscription.
+
+### Light theme (M6, for review)
+
+Same roles on light grounds; the amber fill and the dark text on it stay. Text contrast on `--bg` (#F3F4F3): text 16.7, text-2 11.4, muted 5.9, dim 5.3 (4.7 on `--surface-active`), faint 5.0, accent ink 5.6. The suite measures every text element of Settings, Home, a movie, a series and Live TV: none under 4.5:1.
+
+| Token | Light value |
+| --- | --- |
+| `--bg` / `--bg-sidebar` | `#F3F4F3` / `#EBEDEC` |
+| `--surface` / `-selected` / `-active` / `-raised` | `#FFFFFF` / `#ECEEED` / `#E4E8E6` / `#E7EAE8` |
+| `--line` / `--line-strong` / `--line-outline` | `#E1E4E2` / `#C9CFCC` / `#BFC6C2` |
+| `--text` / `-2` / `-muted` / `-dim` / `-placeholder` | `#121514` / `#2F3532` / `#59605D` / `#606764` / `#737A77` |
+| `--text-soft` / `--text-faint` | `#3C4441` / `#646B68` |
+| `--accent-ink` / `--accent-hover` | `#8F5300` / `#6E4000` |
+| `--track` / `--avatar` | `#DADFDC` / `#F7E6C4` |
+| `--ghost` / `-strong` / `-soft` | ink at 6 % / 10 % / 5 % |
+| `--art-panel` / `--art-shape-1` / `-2` | `#E8EDF0` / `#DAE3E9` / `#C9D7E0` |
+
+**Stays dark in light** (wrapped in `data-theme="dark"`, which brings the dark tokens back): the player, every hero (Home, movie, series), the Live TV preview's video and its chips, toasts, the number entry, channel logo tiles (provider logos are drawn for dark grounds), generated art, cast initials, episode thumbnails, and the title bar's buttons while they float over a detail page's artwork. Scrims and overlays keep their dark values. A theme scope sets its own text colour. To review: the hard edge where a dark hero meets the light page, and dark logo tiles on white cards.
 
 ## Motion
 

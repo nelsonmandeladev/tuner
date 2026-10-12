@@ -14,6 +14,7 @@ Desktop app (Tauri 2 + React + libmpv) that signs in to any **Xtream Codes** IPT
 | `design/screens/*.dc.html` | The five approved screen mockups (see `design/README.md`). |
 | `docs/XTREAM_API.md` | Endpoints, response shapes, stream URLs, provider quirks. |
 | `docs/DECISIONS.md` | Stack decisions and why. Don't reopen them without asking. |
+| `docs/RELEASE.md` | Build, package (NSIS, MSI, MSIX), sign, install, uninstall, Store, Sandbox tests. |
 
 ## Stack
 
@@ -24,6 +25,7 @@ Desktop app (Tauri 2 + React + libmpv) that signs in to any **Xtream Codes** IPT
 - **Network:** `tauri-plugin-http` (bypasses webview CORS; providers are often plain `http://`).
 - **Player:** libmpv. M1 decides how it is embedded (see `docs/DECISIONS.md` D2).
 - **Search:** MiniSearch index in a Web Worker, built after each sync.
+- **Packaging:** Tauri's NSIS and MSI, and MSIX through the winapp CLI (D11, `docs/RELEASE.md`).
 - **Tests:** Vitest for `packages/core` (fixtures in `packages/core/test/fixtures`). Package manager: pnpm workspaces.
 
 ## Repo layout
@@ -49,11 +51,14 @@ Run from the repo root. Keep this list current.
 | `pnpm lint` | ESLint, Prettier check, then `tsc --noEmit` in every package |
 | `pnpm format` | Prettier write (Tailwind class sorting included). Markdown is not formatted |
 | `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
+| `pnpm pack:msix` | Release build, then the MSIX through winapp (D11) in `apps/desktop/src-tauri/target/release/bundle/msix/`, signed with the local `devcert.pfx` (created on first use, gitignored). `--skip-build` packs the last build; `--store` makes it unsigned for the Store. Steps, signing, Store and Sandbox in `docs/RELEASE.md` |
+| `winapp manifest update-assets apps/desktop/app-icon.svg --manifest apps/desktop/msix/Package.appxmanifest` | Regenerate the MSIX assets from the icon (run from `apps/desktop/msix`) |
 | `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
 | `TUNER_M2_SUITE=1 pnpm dev` | Dev build that connects with the `.env.local` account through the real Connect code (unreachable server, connect, keychain, first sync, image cache) and prints `RESULT` lines. Run it on a fresh app-data folder to time a first sync |
 | `TUNER_M3_SUITE="live=<id>,archive=<id>" pnpm dev` | Dev build that runs the M3 Live TV and player checks by itself through the real screens (scroll fps on the full list, layout vs the mockup, mpv alignment, click/zap timings, frame hold, shortcuts, favorites, hide/unhide, EPG cache, catch-up) and prints `RESULT` lines. It checks `active_cons` before opening any stream. `live` is a channel to zap from, `archive` a channel with `tv_archive`; optional `zaps=6,firsts=5`. Ids come from your own library (never commit them) |
 | `TUNER_M4_SUITE="movie=<id>,series=<id>" pnpm dev` | Dev build that runs the M4 Movies/Series checks by itself (grid layout and sort, 60 fps on the real list and on 50,000 synthetic items, artwork, detail pages, the movie player and its shortcuts, track memory, resume points, watched at 90%, next-episode autoplay and cancel) and prints `RESULT` lines. Pick a movie with 2+ audio tracks and subtitles, and a series with 2+ episodes in season 1. It leaves the movie's resume point at 600 s: launch again with `,phase=restart` to check resume across a restart (that run cleans up everything the suite wrote). `,only=series` runs the series steps alone |
 | `TUNER_M5_SUITE="live=<id>,movie=<id>,series=<id>,query=<word>" pnpm dev` | Dev build that runs the M5 Home, search and favorites checks by itself (cold start to Home, search index load and build, keystroke-to-results latency on the full library, accents and typos, keyboard choice, hidden categories, Favorites in Movies and Series, Home's layout vs the mockup, empty states, Resume from Home, search over the player) and prints `RESULT` lines. `live` is a channel with a guide, `series` one with episodes, `query` a word written with accents in some title, typed without them (default `telefoot`). It backs up favorites, history, resume points, hidden categories and account settings first and restores them exactly at the end (or on the next run after a crash). `,phase=cold` only times a cold start and the index load from disk |
+| `TUNER_M6_SUITE="live=<id>,movie=<id>,series=<id>" pnpm dev` | Dev build that runs the M6 checks by itself: Settings layout, playback settings reaching mpv, hidden categories, the light theme (contrast of every text element, captures by `SNAPSHOT`), then a throw-away second account made from `.env.local` (sidebar switch, background first sync and refresh, isolation, playback, edit, clear history and cache, removal proven by a file and keychain listing). It restores app settings and the account's personal data exactly and undoes a crashed run on the next start. `,only=settings|theme|accounts` runs one part |
 | `node scripts/record-fixtures.mjs` | Re-record the Xtream fixtures in `packages/core/test/fixtures` from `.env.local` (credentials, host and content names are stripped) |
 | `TUNER_M1_SUITE="live=<id>,hevc=<id>,ac3=<id>.<ext>,eac3=<id>.<ext>" pnpm dev` | Dev build that opens `/debug/player` and runs the M1 playback suite by itself; results print as `[player] RESULT …` lines. Ids come from your own account (never commit them) |
 
@@ -83,3 +88,4 @@ Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter 
 - ~~Live TV preview behaviour~~ **Answered 2026-10-11: auto-play muted on selection.**
 - ~~Does the provider support catch-up (`tv_archive`)?~~ **Yes, checked in M3 (2026-10-11):** 400 channels have it (2–3 days), the `/timeshift/` path form plays (start time on the server clock). Implemented in M3.
 - Auto-update in v1 or manual installs? Default until answered: manual.
+- ~~Code signing~~ **Answered 2026-10-12:** dev certificate only for now; the Microsoft Store is a target (it signs the MSIX).

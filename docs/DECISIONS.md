@@ -14,6 +14,7 @@ Each entry is settled unless its status says otherwise. To change one, ask the u
 | D8 | Search with MiniSearch in a Web Worker | Decided |
 | D9 | State: Zustand. Lists: TanStack Virtual. Motion: Motion (framer-motion). Styling: Tailwind CSS v4 + tokens. Icons: Hugeicons | Decided (revised 2026-10-11) |
 | D10 | Fonts bundled locally (`@fontsource/*`), never loaded from Google at runtime | Decided |
+| D11 | winapp CLI for MSIX packaging, manifest assets, dev certificates, signing and Windows Sandbox tests | Decided 2026-10-12 |
 
 ## D1 · Tauri 2 + React
 
@@ -133,3 +134,14 @@ Zustand for app state, TanStack Virtual for every long list and grid, React Rout
 ## D10 · Local fonts
 
 Montserrat (700, 800), Inter (400, 500, 600) and Geist Mono (500) via `@fontsource` packages. The app must look right offline.
+
+## D11 · winapp CLI for MSIX and Sandbox testing
+
+**Decided 2026-10-12 (user approval, M6).** The Windows App Development CLI (`winapp`, Microsoft, `winget install Microsoft.winappcli --source winget`; public preview, 0.7.1 when adopted) makes the MSIX package next to Tauri's NSIS and MSI installers, which stay. It is a build-time tool only: nothing of it ships in the app, and no Windows SDK packages are set up (`winapp init` without SDK setup; Tauri uses Cargo). Used for:
+
+- `winapp init` / `manifest update-assets`: `apps/desktop/msix/Package.appxmanifest` and its assets from `app-icon.svg`.
+- `winapp pack` through `pnpm pack:msix` (`scripts/pack-msix.mjs`), and `winapp cert generate` for a local dev certificate (gitignored, public default password, testing only). `winapp cert install` changes the machine's trusted certificates: only with the user's consent.
+- `winapp sign --timestamp` once a real certificate exists, and `winapp store` (the Microsoft Store Developer CLI) for Store submissions. See `docs/RELEASE.md`.
+- Clean-machine tests in Windows Sandbox (`winapp target …`, `winapp run … --on sandbox`, `winapp ui … --on sandbox`). On the host only read-only `winapp ui inspect/screenshot` are used, never input.
+
+winapp collects anonymous usage data unless `WINAPP_CLI_TELEMETRY_OPTOUT=1`; the pack script sets it. Being a preview, commands may change: `docs/RELEASE.md` records the version the steps were checked with.
