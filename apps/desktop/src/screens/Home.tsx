@@ -221,7 +221,7 @@ function Hero({ hero, onResume }: { hero: HomeHero; onResume: () => void }) {
   return (
     <section
       aria-label="Continue watching"
-      className="relative h-110 flex-none overflow-hidden rounded-hero"
+      className="relative h-130 flex-none overflow-hidden rounded-hero"
       data-hero={`${item.kind}:${item.id}`}
     >
       {backdrop && failed !== backdrop ? (
@@ -335,7 +335,7 @@ function PosterRow({
 function HomeSkeleton() {
   return (
     <div className="flex flex-col gap-10 px-10 pb-12" aria-busy aria-label="Loading Home">
-      <div className="h-110 rounded-hero bg-surface" />
+      <div className="h-130 rounded-hero bg-surface" />
       <div className="flex flex-col gap-4">
         <div className="h-6.5 w-52 rounded-full bg-surface" />
         <div className="grid grid-cols-5 gap-3.5">

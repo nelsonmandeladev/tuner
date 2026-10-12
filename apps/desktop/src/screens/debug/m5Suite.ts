@@ -673,7 +673,7 @@ export async function runM5Suite(plan: M5Plan, navigate: NavigateFunction, log: 
         [`padding ${css(home, "padding")}`, css(home, "padding") === "0px 40px 48px"],
         [
           `hero ${round(heroBox.width)}×${round(heroBox.height)}`,
-          near(heroBox.height, 440) && near(heroBox.width, content),
+          near(heroBox.height, 520) && near(heroBox.width, content),
         ],
         [`hero radius ${css(hero, "border-radius")}`, css(hero, "border-radius") === "24px"],
         [`hero padding ${css(heroInner, "padding")}`, css(heroInner, "padding") === "40px 44px"],
