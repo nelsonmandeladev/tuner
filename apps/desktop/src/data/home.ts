@@ -32,6 +32,8 @@ import { activeLibrary, useSession } from "./session";
 /** Cards per row in the mockup: five channels, six posters. */
 export const CHANNELS_PER_ROW = 5;
 export const POSTERS_PER_ROW = 6;
+/** Favorite channels in Home's carousel: rows over ~100 items would need virtualising (CLAUDE.md rule 10). */
+const FAVORITES_ON_HOME = 100;
 
 export interface HomeHero {
   item: InProgress;
@@ -88,7 +90,7 @@ async function read() {
   if (useHome.getState().accountId !== active.id) set({ status: "loading" });
   try {
     await loadFavorites();
-    const favoriteIds = useFavorites.getState().live.slice(0, CHANNELS_PER_ROW * 2);
+    const favoriteIds = useFavorites.getState().live.slice(0, FAVORITES_ON_HOME);
     const [inProgress, favoriteChannels, recentChannels, recentVod, recentSeries] =
       await Promise.all([
         readInProgress(db, POSTERS_PER_ROW + 1),

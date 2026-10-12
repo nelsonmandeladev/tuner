@@ -1,9 +1,10 @@
 import { PlayIcon } from "@hugeicons/core-free-icons";
 import { episodeTitle, resumeProgress, splitTitleYear, type InProgress } from "@tuner/core";
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useNavigate, type NavigateFunction } from "react-router";
 import { formatLeft } from "../app/format";
 import { Button } from "../components/Button";
+import { Carousel, CarouselArrows } from "../components/Carousel";
 import { ChannelCard } from "../components/ChannelCard";
 import { EmptyState } from "../components/EmptyState";
 import { GeneratedArt } from "../components/GeneratedArt";
@@ -14,9 +15,17 @@ import { Screen } from "../components/Screen";
 import { artworkUrl } from "../data/artwork";
 import { ALL, movies, series, type PosterItem } from "../data/catalog";
 import { useNow, wantEpg } from "../data/epg";
-import { loadHome, markHomePainted, resumeTarget, useHome, type HomeHero } from "../data/home";
+import {
+  CHANNELS_PER_ROW,
+  loadHome,
+  markHomePainted,
+  resumeTarget,
+  useHome,
+  type HomeHero,
+} from "../data/home";
 import { clearReveal, FAVORITES, loadLive, revealChannel, selectCategory } from "../data/live";
 import { useSession } from "../data/session";
+import { useCarouselControls } from "../hooks/useCarouselControls";
 import { enterPlayer } from "../player/fullscreen";
 import { playVod, tune } from "../player/tuner";
 
@@ -56,14 +65,23 @@ export function Home() {
     return () => clearTimeout(timer);
   }, []);
 
-  // What is on now, for the channels on screen.
+  // What is on now, for the cards on screen: the favorites in view (and the
+  // next page, so paging shows programmes at once) and the recent channels.
+  const favorites = useCarouselControls();
+  const [inView, setInView] = useState<[number, number]>([0, CHANNELS_PER_ROW - 1]);
+  const onVisible = useCallback(
+    (first: number, last: number) =>
+      setInView((v) => (v[0] === first && v[1] === last ? v : [first, last])),
+    [],
+  );
   useEffect(() => {
+    const shown = favoriteChannels.slice(inView[0], inView[1] + 1 + CHANNELS_PER_ROW);
     wantEpg(
       "home",
-      [...favoriteChannels, ...recentChannels].map((c) => c.id),
+      [...shown, ...recentChannels].map((c) => c.id),
     );
     return () => wantEpg("home", []);
-  }, [favoriteChannels, recentChannels]);
+  }, [favoriteChannels, recentChannels, inView]);
 
   if (status === "error") {
     return (
@@ -90,32 +108,27 @@ export function Home() {
 
   return (
     <div className="flex flex-col gap-10 px-10 pt-8 pb-12" data-home>
-      {hero ? (
-        <Hero hero={hero} onResume={() => resume(hero.item)} />
-      ) : (
-        <EmptyState
-          message="Movies and episodes you start show up here, ready to resume."
-          action={
-            <Button variant="ghost" onClick={() => void navigate("/movies")}>
-              Browse movies
-            </Button>
-          }
-        />
-      )}
+      {hero && <Hero hero={hero} onResume={() => resume(hero.item)} />}
 
-      <Row
-        title="Favorite channels"
-        link={{
-          label: "Open Live TV",
-          onClick: () =>
-            void loadLive().then(() => {
-              selectCategory(FAVORITES);
-              void navigate("/live");
-            }),
-        }}
-      >
-        {favoriteChannels.length > 0 ? (
-          <div className="grid grid-cols-5 gap-3.5" data-row="favorite-channels">
+      {favoriteChannels.length > 0 && (
+        <Row
+          title="Favorite channels"
+          arrows={<CarouselArrows controls={favorites.controls} label="favorite channels" />}
+          link={{
+            label: "Open Live TV",
+            onClick: () =>
+              void loadLive().then(() => {
+                selectCategory(FAVORITES);
+                void navigate("/live");
+              }),
+          }}
+        >
+          <Carousel
+            perPage={CHANNELS_PER_ROW}
+            row="favorite-channels"
+            onControls={favorites.onControls}
+            onVisible={onVisible}
+          >
             {favoriteChannels.map((channel) => (
               <ChannelCard
                 key={channel.id}
@@ -124,11 +137,9 @@ export function Home() {
                 onOpen={(id) => openChannel(id, true)}
               />
             ))}
-          </div>
-        ) : (
-          <EmptyState message="No favorite channels yet. Press the heart on any channel in Live TV." />
-        )}
-      </Row>
+          </Carousel>
+        </Row>
+      )}
 
       {continueWatching.length > 0 && (
         <Row title="Continue watching">
@@ -264,16 +275,22 @@ function Hero({ hero, onResume }: { hero: HomeHero; onResume: () => void }) {
 function Row({
   title,
   link,
+  arrows,
   children,
 }: {
   title: string;
   link?: { label: string; onClick: () => void };
+  /** Previous/next buttons beside the title (a carousel row). */
+  arrows?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-heading">{title}</h2>
+      <div className="flex items-center justify-between gap-4">
+        <span className="flex items-center gap-4">
+          <h2 className="text-heading">{title}</h2>
+          {arrows}
+        </span>
         {link && (
           <button
             type="button"
