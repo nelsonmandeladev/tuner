@@ -8,7 +8,7 @@
  *   reloaded up to 3 times with 1 s / 2 s / 4 s backoff while the overlay shows
  *   "Reconnecting…" over the last frame. The count resets once playback has
  *   been stable for 15 s, so a flapping stream cannot loop forever.
- * - Hardware decoding: mpv runs `hwdec=auto-safe` and lavc already drops to
+ * - Hardware decoding (on by default, Settings): `hwdec=auto-safe`; lavc drops to
  *   software after repeated decode errors. If a load still fails after the
  *   decoder was configured but before the first frame, the next try runs with
  *   `hwdec=no` (once per source).
@@ -20,7 +20,7 @@
 
 import { redact } from "@tuner/core";
 import type { MpvEvent } from "tauri-plugin-libmpv-api";
-import { ensureMpv, mpv, onMpvEvent } from "./mpv";
+import { ensureMpv, mpv, onMpvEvent, preferredHwdec } from "./mpv";
 import { initialPlayerState, usePlayer, type LoadTiming, type Track } from "./store";
 
 export interface PlayerSource {
@@ -107,7 +107,7 @@ export async function open(source: PlayerSource, { requestedAt }: OpenOptions = 
   attempt = 0;
   if (hwdecFallback) {
     hwdecFallback = false;
-    await mpv.setHwdec("auto-safe");
+    await mpv.setHwdec(preferredHwdec());
   }
   set({
     status: "loading",

@@ -23,6 +23,7 @@ import {
   type MpvObservableProperty,
   type VideoMarginRatio,
 } from "tauri-plugin-libmpv-api";
+import { languageCodes, useSettings, type AppSettings, type BufferSize } from "../data/settings";
 
 /** A desktop browser agent: some providers reject unknown ones (XTREAM_API.md "Quirks"). */
 const USER_AGENT =
@@ -61,15 +62,14 @@ const config: MpvConfig = {
 };
 
 /**
- * Playback tuning, set as properties so it can change at runtime (Settings will
- * change decoding and buffering later). Each takes effect from the next load.
+ * Playback tuning that never changes, set as properties after the instance is
+ * created. Values are strings: mpv parses a string for any option type, while
+ * a JSON number reaches it as a double, which integer options such as
+ * probesize reject.
  */
-// Values are strings: mpv parses a string for any option type, while a JSON number
-// reaches it as a double, which integer options such as probesize reject.
 const playbackOptions: Record<string, string> = {
-  // Hardware decoding where it is known to be safe. If the hardware decoder
-  // fails mid-stream, lavc drops to software after a few bad frames.
-  hwdec: "auto-safe",
+  // If the hardware decoder fails mid-stream, lavc drops to software after a
+  // few bad frames (hardware decoding itself is a setting, see below).
   "vd-lavc-software-fallback": "yes",
   // A stalled stream ends after 10 s instead of hanging, so reconnect can run.
   "network-timeout": "10",
@@ -85,6 +85,47 @@ const playbackOptions: Record<string, string> = {
   "demuxer-lavf-probe-info": "nostreams",
 };
 
+/** Settings → Playback "Buffer": the demuxer's forward cache (mpv's default is 150 MiB). */
+const BUFFER_MIB: Record<BufferSize, number> = { small: 50, normal: 150, large: 400 };
+
+/**
+ * The options Settings → Playback controls (SPEC §9). Each applies from the
+ * next file; hardware decoding also switches the current one.
+ */
+export function settingsOptions(settings: AppSettings): Record<string, string> {
+  const mib = BUFFER_MIB[settings.buffer];
+  return {
+    // Hardware decoding where it is known to be safe, or software only.
+    hwdec: settings.hardwareDecoding ? "auto-safe" : "no",
+    "demuxer-max-bytes": `${mib}MiB`,
+    "demuxer-max-back-bytes": `${Math.round(mib / 3)}MiB`,
+    // "auto" deinterlaces only frames flagged interlaced (1080i channels).
+    deinterlace: { auto: "auto", on: "yes", off: "no" }[settings.deinterlace],
+    // Preferred track languages; empty = the stream's default track. A
+    // channel's or title's remembered choice still wins (see tuner.ts).
+    alang: languageCodes(settings.audioLanguage),
+    slang: languageCodes(settings.subtitleLanguage),
+  };
+}
+
+/** The hardware decoding mode the user chose (the controller's software fallback returns to it). */
+export const preferredHwdec = () =>
+  settingsOptions(useSettings.getState()).hwdec as "auto-safe" | "no";
+
+/** Options mpv rejected (dev checks): one bad value never stops the others or playback. */
+export const rejectedOptions = new Set<string>();
+
+async function setOptions(options: Record<string, string>) {
+  for (const [name, value] of Object.entries(options)) {
+    try {
+      await setProperty(name, value);
+      rejectedOptions.delete(name);
+    } catch {
+      rejectedOptions.add(name);
+    }
+  }
+}
+
 let ready: Promise<void> | null = null;
 
 /** Creates the instance on first call; later calls return the same promise. */
@@ -94,12 +135,22 @@ export function ensureMpv(): Promise<void> {
     for (const [name, value] of Object.entries(playbackOptions)) {
       await setProperty(name, value);
     }
+    await setOptions(settingsOptions(useSettings.getState()));
   })().catch((error: unknown) => {
     ready = null;
     throw error;
   });
   return ready;
 }
+
+// A changed setting reaches mpv at once (it applies from the next file).
+useSettings.subscribe((state, prev) => {
+  if (!ready) return;
+  const next = settingsOptions(state);
+  const before = settingsOptions(prev);
+  const changed = Object.fromEntries(Object.entries(next).filter(([k, v]) => before[k] !== v));
+  if (Object.keys(changed).length > 0) void ready.then(() => setOptions(changed));
+});
 
 export function onMpvEvent(callback: (event: MpvEvent) => void) {
   return listenEvents(callback);
