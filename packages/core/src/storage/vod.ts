@@ -5,7 +5,7 @@
  */
 
 import type { SqlAdapter } from "../adapters";
-import type { ResumePoint } from "../vod/resume";
+import { RESUME_MIN_SECS, type ResumePoint } from "../vod/resume";
 import type { Episode } from "../xtream/schemas";
 import { insertRows } from "./insert";
 
@@ -41,6 +41,35 @@ export function readVodItems(db: SqlAdapter): Promise<VodItem[]> {
 /** One movie, or null if the last sync no longer lists it. */
 export async function readVodItem(db: SqlAdapter, id: number): Promise<VodItem | null> {
   return (await selectVod(db, "WHERE id = ?", [id]))[0] ?? null;
+}
+
+/**
+ * Items of a kind that a hidden category does not hide (SPEC §3: hidden
+ * categories disappear everywhere): listed in at least one visible category,
+ * or anything when nothing is hidden. `alias` is the item table's name in the query.
+ */
+const visibleIn = (kind: "vod" | "series", alias: string) =>
+  `(NOT EXISTS (SELECT 1 FROM hidden_categories WHERE kind = '${kind}')
+    OR EXISTS (SELECT 1 FROM category_items m WHERE m.kind = '${kind}' AND m.item_id = ${alias}.id
+      AND NOT EXISTS (SELECT 1 FROM hidden_categories h WHERE h.kind = '${kind}' AND h.id = m.category_id)))`;
+
+/** The most recently added movies (`added`), outside hidden categories (Home, SPEC §2). */
+export function readRecentVod(db: SqlAdapter, limit: number): Promise<VodItem[]> {
+  return selectVod(
+    db,
+    `WHERE added_at IS NOT NULL AND ${visibleIn("vod", "vod")} ORDER BY added_at DESC, position LIMIT ?`,
+    [limit],
+  );
+}
+
+/** The most recently updated series (`last_modified`), outside hidden categories. */
+export function readRecentSeries(db: SqlAdapter, limit: number): Promise<SeriesItem[]> {
+  return selectSeries(
+    db,
+    `WHERE last_modified_at IS NOT NULL AND ${visibleIn("series", "series")}
+     ORDER BY last_modified_at DESC, position LIMIT ?`,
+    [limit],
+  );
 }
 
 async function selectVod(db: SqlAdapter, tail: string, params: number[] = []): Promise<VodItem[]> {
@@ -189,6 +218,44 @@ export async function replaceEpisodes(
   });
 }
 
+interface EpisodeRow {
+  id: number;
+  season: number | null;
+  episode_num: number | null;
+  title: string | null;
+  ext: string;
+  duration_secs: number | null;
+  image: string | null;
+  plot: string | null;
+  rating: number | null;
+  release_date: string | null;
+}
+
+const EPISODE_COLUMNS = `e.id, e.season, e.episode_num, e.title, e.ext, e.duration_secs, e.image,
+  e.plot, e.rating, e.release_date`;
+
+const fromEpisodeRow = (r: EpisodeRow): Episode => ({
+  id: Number(r.id),
+  season: num(r.season),
+  episodeNum: num(r.episode_num),
+  title: r.title,
+  ext: r.ext,
+  durationSecs: num(r.duration_secs),
+  image: r.image,
+  plot: r.plot,
+  rating: num(r.rating),
+  releaseDate: r.release_date,
+});
+
+/** A series' episodes as stored when its page was last opened (any order). */
+export async function readEpisodes(db: SqlAdapter, seriesId: number): Promise<Episode[]> {
+  const rows = await db.select<EpisodeRow>(
+    `SELECT ${EPISODE_COLUMNS} FROM episodes e WHERE e.series_id = ?`,
+    [seriesId],
+  );
+  return rows.map(fromEpisodeRow);
+}
+
 /** The series an episode belongs to, if its series page was opened once. */
 export async function seriesOfEpisode(db: SqlAdapter, episodeId: number): Promise<number | null> {
   const [row] = await db.select<{ series_id: number }>(
@@ -267,4 +334,97 @@ export async function recordHistory(
     id,
     at,
   ]);
+}
+
+/** A movie or an episode in progress (Home's hero and Continue watching, SPEC §2). */
+export type InProgress =
+  | { kind: "vod"; id: number; point: ResumePoint; movie: VodItem }
+  | {
+      kind: "episode";
+      id: number;
+      point: ResumePoint;
+      episode: Episode;
+      series: { id: number; name: string; cover: string | null; backdrop: string | null };
+    };
+
+interface PointRow {
+  position_secs: number;
+  duration_secs: number | null;
+  watched: number;
+  updated_at: number;
+}
+
+const pointOf = (r: PointRow): ResumePoint => ({
+  positionSecs: Number(r.position_secs),
+  durationSecs: num(r.duration_secs),
+  watched: Number(r.watched) === 1,
+  updatedAt: Number(r.updated_at),
+});
+
+/**
+ * Movies and episodes started and not finished, most recent first: one entry
+ * per series (its latest episode). Items the library no longer lists, and
+ * episodes whose series page was never opened, are left out.
+ */
+export async function readInProgress(db: SqlAdapter, limit: number): Promise<InProgress[]> {
+  const point = "r.position_secs, r.duration_secs, r.watched, r.updated_at";
+  const unfinished = "r.watched = 0 AND r.position_secs >= ?";
+  const [movies, episodes] = await Promise.all([
+    db.select<
+      PointRow & {
+        id: number;
+        name: string;
+        icon: string | null;
+        rating: number | null;
+        added_at: number | null;
+        ext: string;
+      }
+    >(
+      `SELECT v.id, v.name, v.icon, v.rating, v.added_at, v.ext, ${point}
+       FROM resume r JOIN vod v ON v.id = r.id
+       WHERE r.kind = 'vod' AND ${unfinished} ORDER BY r.updated_at DESC LIMIT ?`,
+      [RESUME_MIN_SECS, limit],
+    ),
+    db.select<
+      PointRow &
+        EpisodeRow & {
+          series_id: number;
+          series_name: string;
+          cover: string | null;
+          backdrop: string | null;
+        }
+    >(
+      `SELECT ${EPISODE_COLUMNS}, s.id AS series_id, s.name AS series_name, s.cover, s.backdrop, ${point}
+       FROM resume r JOIN episodes e ON e.id = r.id JOIN series s ON s.id = e.series_id
+       WHERE r.kind = 'episode' AND ${unfinished} ORDER BY r.updated_at DESC LIMIT ?`,
+      [RESUME_MIN_SECS, limit * 4],
+    ),
+  ]);
+  const items: InProgress[] = movies.map((r) => ({
+    kind: "vod",
+    id: Number(r.id),
+    point: pointOf(r),
+    movie: {
+      id: Number(r.id),
+      name: r.name,
+      icon: r.icon,
+      rating: num(r.rating),
+      addedAt: num(r.added_at),
+      ext: r.ext,
+    },
+  }));
+  const seenSeries = new Set<number>();
+  for (const r of episodes) {
+    const seriesId = Number(r.series_id);
+    if (seenSeries.has(seriesId)) continue;
+    seenSeries.add(seriesId);
+    items.push({
+      kind: "episode",
+      id: Number(r.id),
+      point: pointOf(r),
+      episode: fromEpisodeRow(r),
+      series: { id: seriesId, name: r.series_name, cover: r.cover, backdrop: r.backdrop },
+    });
+  }
+  return items.sort((a, b) => b.point.updatedAt - a.point.updatedAt).slice(0, limit);
 }

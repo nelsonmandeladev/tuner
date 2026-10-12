@@ -19,29 +19,57 @@ export interface LiveChannel {
   tvArchiveDays: number;
 }
 
+interface LiveRow {
+  id: number;
+  num: number | null;
+  name: string;
+  icon: string | null;
+  epg: string | null;
+  archive: number;
+  days: number;
+}
+
+const LIVE_COLUMNS = `l.id, l.num, l.name, l.icon, l.epg_channel_id AS epg, l.tv_archive AS archive,
+  l.tv_archive_days AS days`;
+
+const fromLiveRow = (r: LiveRow): LiveChannel => ({
+  id: Number(r.id),
+  num: r.num === null ? null : Number(r.num),
+  name: r.name,
+  icon: r.icon,
+  epgChannelId: r.epg,
+  tvArchive: Number(r.archive) === 1,
+  tvArchiveDays: Number(r.days),
+});
+
 /** Every live channel in provider order. ~20,000 rows: keep the columns few. */
 export async function readLiveChannels(db: SqlAdapter): Promise<LiveChannel[]> {
-  const rows = await db.select<{
-    id: number;
-    num: number | null;
-    name: string;
-    icon: string | null;
-    epg: string | null;
-    archive: number;
-    days: number;
-  }>(
-    `SELECT id, num, name, icon, epg_channel_id AS epg, tv_archive AS archive, tv_archive_days AS days
-     FROM live ORDER BY position`,
+  const rows = await db.select<LiveRow>(`SELECT ${LIVE_COLUMNS} FROM live l ORDER BY l.position`);
+  return rows.map(fromLiveRow);
+}
+
+/** The channels with these ids, in the order given; ids the library no longer lists are skipped. */
+export async function readLiveChannelsByIds(
+  db: SqlAdapter,
+  ids: readonly number[],
+): Promise<LiveChannel[]> {
+  if (ids.length === 0) return [];
+  const rows = await db.select<LiveRow>(
+    `SELECT ${LIVE_COLUMNS} FROM live l WHERE l.id IN (${ids.map(() => "?").join(", ")})`,
+    [...ids],
   );
-  return rows.map((r) => ({
-    id: Number(r.id),
-    num: r.num === null ? null : Number(r.num),
-    name: r.name,
-    icon: r.icon,
-    epgChannelId: r.epg,
-    tvArchive: Number(r.archive) === 1,
-    tvArchiveDays: Number(r.days),
-  }));
+  const byId = new Map(rows.map((r) => [Number(r.id), fromLiveRow(r)]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
+/** Channels from the watch history, most recent first (Home, SPEC §2). */
+export async function readRecentChannels(db: SqlAdapter, limit: number): Promise<LiveChannel[]> {
+  const rows = await db.select<LiveRow>(
+    `SELECT ${LIVE_COLUMNS} FROM history h JOIN live l ON l.id = h.id
+     WHERE h.kind = 'live' ORDER BY h.watched_at DESC LIMIT ?`,
+    [limit],
+  );
+  return rows.map(fromLiveRow);
 }
 
 /** Channel ids per category, in the provider's order within each category. */
