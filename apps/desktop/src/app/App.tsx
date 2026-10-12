@@ -7,9 +7,10 @@ import { PlaybackScope } from "./PlaybackScope";
 import { Connect } from "../screens/Connect";
 import { Home } from "../screens/Home";
 import { LiveTV } from "../screens/LiveTV";
-import { Movies } from "../screens/Movies";
+import { Movies, Series } from "../screens/Catalog";
+import { MovieDetail } from "../screens/details/MovieDetail";
+import { SeriesDetail } from "../screens/details/SeriesDetail";
 import { Search } from "../screens/Search";
-import { Series } from "../screens/Series";
 import { Settings } from "../screens/Settings";
 import { AppShell } from "./AppShell";
 import { RequireAccount } from "./RequireAccount";
@@ -37,7 +38,9 @@ export function App() {
               <Route index element={<Home />} />
               <Route path="live" element={<LiveTV />} />
               <Route path="movies" element={<Movies />} />
+              <Route path="movies/:id" element={<MovieDetail />} />
               <Route path="series" element={<Series />} />
+              <Route path="series/:id" element={<SeriesDetail />} />
               <Route path="search" element={<Search />} />
               <Route path="settings" element={<Settings />} />
             </Route>

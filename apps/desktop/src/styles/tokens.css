@@ -56,6 +56,16 @@
     rgba(5, 6, 6, 0.92) 100%
   );
 
+  /* Movies and Series (design/screens/Series.dc.html, Main.dc.html; added in M4) */
+  --ghost-soft: rgba(241, 243, 242, 0.08); /* Back button on a hero */
+  --scrim-hero: linear-gradient(
+    90deg,
+    rgba(10, 11, 12, 0.94) 0%,
+    rgba(10, 11, 12, 0.6) 45%,
+    rgba(10, 11, 12, 0) 78%
+  );
+  --scrim-hero-bottom: linear-gradient(0deg, var(--bg) 0%, rgba(10, 11, 12, 0) 100%);
+
   /* Generated artwork palette, tint and shape (DESIGN.md "Artwork"), picked by artIndex() */
   --art-0-tint: #1f3b57;
   --art-0-shape: #2e5578;
@@ -137,6 +147,11 @@
   --text-monogram-l--line-height: 1;
   --text-monogram-l--font-weight: 800;
   --text-monogram-l--letter-spacing: -0.04em;
+  /* Title on generated poster art (Main.dc.html) */
+  --text-poster: 19px;
+  --text-poster--line-height: 1.02;
+  --text-poster--font-weight: 800;
+  --text-poster--letter-spacing: -0.03em;
   /* Brand wordmark in the sidebar (Montserrat 800, 21 px in Main.dc.html) */
   --text-wordmark: 21px;
   --text-wordmark--line-height: 1;
@@ -191,6 +206,7 @@
   --color-ghost-strong: var(--ghost-strong);
   --color-line-on-media: var(--line-on-media);
   --color-art-glow: var(--art-glow);
+  --color-ghost-soft: var(--ghost-soft);
   --color-art-shade: var(--art-shade);
   --color-transparent: transparent;
   --color-current: currentColor;
