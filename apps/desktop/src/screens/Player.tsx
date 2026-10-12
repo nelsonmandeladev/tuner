@@ -96,6 +96,7 @@ export function Player() {
 
   return (
     <div
+      data-theme="dark"
       className={`absolute inset-0 overflow-hidden text-text select-none ${visible ? "" : "cursor-none"}`}
       onMouseMove={wake}
       onDoubleClick={(event) => {

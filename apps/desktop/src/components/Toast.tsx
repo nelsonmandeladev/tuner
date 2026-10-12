@@ -13,6 +13,7 @@ const exit = { duration: 0.15, ease: "easeIn" } as const;
 export function Toast({ message }: ToastProps) {
   return (
     <div
+      data-theme="dark"
       className="pointer-events-none absolute inset-x-0 top-6 flex justify-center"
       role="status"
       aria-live="polite"

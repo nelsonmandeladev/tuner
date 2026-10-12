@@ -23,6 +23,7 @@ export function PersonAvatar({ name, role, onOpen }: PersonAvatarProps) {
       data-person
     >
       <span
+        data-theme="dark"
         className="flex size-18 items-center justify-center rounded-full font-display text-heading font-extrabold text-text transition-transform duration-160 ease-out group-hover:scale-105 motion-reduce:transition-none"
         style={{ background: `var(--art-${artIndex(name)}-tint)` }}
         aria-hidden

@@ -142,7 +142,7 @@ function PreviewVideo({ channel }: { channel: LiveChannel }) {
   const showArt = !shown || status === "error" || status === "idle" || tunedId !== channel.id;
 
   return (
-    <div className="relative aspect-video w-full">
+    <div className="relative aspect-video w-full" data-theme="dark">
       <VideoSurface radius={18} className="absolute inset-0" />
       {showArt && <GeneratedArt name={channel.name} className="absolute inset-0 rounded-card" />}
       <div className="absolute top-3.5 left-3.5">

@@ -12,6 +12,7 @@ export function NumberEntry({ onVideo = false }: { onVideo?: boolean }) {
   const digits = useTuner((s) => s.digits);
   return (
     <div
+      data-theme="dark"
       className={`pointer-events-none absolute flex ${onVideo ? "top-28 right-10" : "top-6 right-8"}`}
       role="status"
       aria-live="polite"

@@ -28,7 +28,7 @@ export function Hero({ name, backdrop, backLabel, onBack, poster, children }: He
   const showPoster = !showBackdrop && posterSrc && !failed.includes(posterSrc);
 
   return (
-    <section className="relative flex min-h-110 overflow-hidden" data-hero>
+    <section className="relative flex min-h-110 overflow-hidden" data-hero data-theme="dark">
       {showBackdrop ? (
         <img
           src={backdropSrc}

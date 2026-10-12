@@ -1,13 +1,17 @@
 /*
  * Design tokens from docs/DESIGN.md.
  *
- * The raw tokens live on :root under the names DESIGN.md uses, so a light theme
- * (M6) only has to redefine them. The @theme block maps them onto Tailwind's
- * namespaces. Tailwind's default colours, font sizes and radii are cleared, so a
+ * The raw tokens live on :root under the names DESIGN.md uses. The light theme
+ * (M6, Settings → Appearance) redefines the colour roles under
+ * `:root[data-theme="light"]`; anything that sits on video or artwork (the
+ * player, heroes, chips over the preview, logo tiles, generated art) is
+ * wrapped in `data-theme="dark"`, which brings the dark values back for that
+ * subtree. The @theme block maps the tokens onto Tailwind's namespaces. Tailwind's default colours, font sizes and radii are cleared, so a
  * class that is not a design token does not compile into anything.
  */
 
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
 
   /* Colour (dark, the default theme) */
@@ -26,6 +30,9 @@
   --text-placeholder: #6e7471;
   --accent: #f2a93b;
   --accent-hover: #ffd08a;
+  /* Accent as text or a stroke icon (links, ticks, eyebrows): the accent itself
+     in dark, a darker amber in light where #F2A93B on white fails contrast. */
+  --accent-ink: #f2a93b;
   --on-accent: #1a1204;
   --live: #f0503c;
   --overlay: rgba(5, 6, 6, 0.6);
@@ -102,6 +109,46 @@
   --duration-hover: 120ms;
   --duration-in: 200ms;
   --duration-out: 150ms;
+}
+
+/*
+ * Light theme (M6): the same roles on light grounds. The accent fill and the
+ * text on it stay; accent text uses --accent-ink (5.6:1 on --bg). Scrims,
+ * overlays and media tokens keep their dark values: they sit on video and
+ * artwork, which stays dark. Contrast on --bg: text 16.7, text-2 11.4,
+ * muted 5.9, dim 5.3 (4.7 on --surface-active), faint 5.0.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f3f4f3;
+  --bg-sidebar: #ebedec;
+  --surface: #ffffff;
+  --surface-selected: #eceeed;
+  --surface-active: #e4e8e6;
+  --surface-raised: #e7eae8;
+  --line: #e1e4e2;
+  --line-strong: #c9cfcc;
+  --line-outline: #bfc6c2;
+  --text: #121514;
+  --text-2: #2f3532;
+  --text-muted: #59605d;
+  --text-dim: #606764;
+  --text-placeholder: #737a77;
+  --text-soft: #3c4441;
+  --text-faint: #646b68;
+  --accent-ink: #8f5300;
+  --accent-hover: #6e4000;
+  --track: #dadfdc;
+  --avatar: #f7e6c4;
+  --ghost: rgba(18, 21, 20, 0.06);
+  --ghost-strong: rgba(18, 21, 20, 0.1);
+  --ghost-soft: rgba(18, 21, 20, 0.05);
+
+  /* Connect's art panel */
+  --art-panel: #e8edf0;
+  --art-shape-1: #dae3e9;
+  --art-shape-2: #c9d7e0;
 }
 
 @theme {
@@ -201,6 +248,7 @@
   --color-text-placeholder: var(--text-placeholder);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
   --color-on-accent: var(--on-accent);
   --color-live: var(--live);
   --color-overlay: var(--overlay);

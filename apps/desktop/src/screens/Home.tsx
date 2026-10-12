@@ -222,6 +222,7 @@ function Hero({ hero, onResume }: { hero: HomeHero; onResume: () => void }) {
     <section
       aria-label="Continue watching"
       className="relative h-130 flex-none overflow-hidden rounded-hero"
+      data-theme="dark"
       data-hero={`${item.kind}:${item.id}`}
     >
       {backdrop && failed !== backdrop ? (
@@ -295,7 +296,7 @@ function Row({
           <button
             type="button"
             onClick={link.onClick}
-            className="text-small font-medium text-accent transition-colors duration-(--duration-hover) hover:text-accent-hover"
+            className="text-small font-medium text-accent-ink transition-colors duration-(--duration-hover) hover:text-accent-hover"
           >
             {link.label}
           </button>

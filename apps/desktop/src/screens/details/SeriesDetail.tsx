@@ -272,7 +272,10 @@ const EpisodeRow = memo(function EpisodeRow({
         current ? "bg-surface-selected" : "hover:bg-surface"
       }`}
     >
-      <span className="relative aspect-video w-42 flex-none overflow-hidden rounded-field bg-surface">
+      <span
+        data-theme="dark"
+        className="relative aspect-video w-42 flex-none overflow-hidden rounded-field bg-surface"
+      >
         {image && !failed ? (
           <img
             src={image}
@@ -312,7 +315,7 @@ const EpisodeRow = memo(function EpisodeRow({
         {point?.watched ? (
           <span className="text-mono font-semibold text-text-dim">Watched</span>
         ) : left !== null ? (
-          <span className="text-mono font-semibold text-accent">
+          <span className="text-mono font-semibold text-accent-ink">
             {formatLeft(left * 1000)} left
           </span>
         ) : null}

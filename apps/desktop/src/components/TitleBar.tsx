@@ -42,6 +42,9 @@ export function TitleBar() {
   const scrolled = useLayout((s) => s.underBarScrolled);
   const history = useHistoryEnds();
   const navigate = useNavigate();
+  // Over a detail page's artwork (not yet scrolled) the buttons sit on dark
+  // pictures in either theme; over the sidebar they follow the theme.
+  const onArt = underBar && !scrolled ? "dark" : undefined;
 
   return (
     <header
@@ -70,7 +73,7 @@ export function TitleBar() {
         </motion.div>
       )}
       {!bare && (
-        <>
+        <span className="contents" data-theme={sidebarOpen ? undefined : onArt}>
           <BarButton
             icon={SidebarLeftIcon}
             label={`${sidebarOpen ? "Hide" : "Show"} sidebar (${shortcutLabel("B")})`}
@@ -89,13 +92,19 @@ export function TitleBar() {
             disabled={!history.canForward}
             onClick={() => void navigate(1)}
           />
-        </>
+        </span>
       )}
-      <span data-tauri-drag-region className="pl-2">
+      <span
+        data-tauri-drag-region
+        className="pl-2"
+        data-theme={sidebarOpen && !bare ? undefined : onArt}
+      >
         <Logo size="s" />
       </span>
       <div data-tauri-drag-region className="h-full flex-1" />
-      <WindowButtons />
+      <span className="contents" data-theme={onArt}>
+        <WindowButtons />
+      </span>
     </header>
   );
 }

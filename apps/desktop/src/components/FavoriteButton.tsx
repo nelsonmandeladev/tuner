@@ -33,7 +33,7 @@ export function FavoriteButton({ kind, id, name, tone = "surface" }: FavoriteBut
         tone === "surface"
           ? "border border-line-strong bg-surface hover:bg-surface-raised"
           : "bg-ghost hover:bg-ghost-strong"
-      } ${favorite ? "text-accent" : "text-text"}`}
+      } ${favorite ? "text-accent-ink" : "text-text"}`}
     >
       <Icon icon={FavouriteIcon} className={favorite ? "[&_path]:fill-current" : ""} />
     </button>

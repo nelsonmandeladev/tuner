@@ -22,6 +22,7 @@ export function GeneratedArt({ name, variant = "monogram", className }: Generate
   const n = artIndex(name);
   return (
     <div
+      data-theme="dark"
       className={`overflow-hidden ${className}`}
       style={{ background: `var(--art-${n}-tint)` }}
       aria-hidden

@@ -21,7 +21,9 @@ export const ChannelLogo = memo(function ChannelLogo({ name, icon, size = 40 }: 
 
   if (src && failed !== src) {
     return (
+      // Provider logos are drawn for dark grounds: the tile stays dark in the light theme.
       <span
+        data-theme="dark"
         className={`${box} flex flex-none items-center justify-center rounded-field bg-surface p-1.5`}
       >
         <img
@@ -37,6 +39,7 @@ export const ChannelLogo = memo(function ChannelLogo({ name, icon, size = 40 }: 
   }
   return (
     <span
+      data-theme="dark"
       className={`${box} flex flex-none items-center justify-center rounded-field font-display font-extrabold tracking-tight text-text ${
         size === 44 ? "text-caption" : "text-mono"
       }`}

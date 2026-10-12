@@ -144,7 +144,7 @@ function StepIcon({ status }: { status: StepStatus }) {
   const working = status === "fetching" || status === "saving";
   const tone =
     status === "done" || working
-      ? "text-accent"
+      ? "text-accent-ink"
       : status === "failed"
         ? "text-text-2"
         : "text-text-dim";
