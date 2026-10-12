@@ -273,6 +273,9 @@ export async function connect(form: ConnectForm, signal?: AbortSignal): Promise<
     if (previous && previous !== account.id) closeLibrary(previous);
     const accounts = await listAccounts(db);
     set({
+      // The first account of a fresh install: the app shell may open now
+      // (RequireAccount would otherwise send "Start watching" back to Connect).
+      phase: "ready",
       accounts,
       active: accounts.find((a) => a.id === account.id) ?? account,
       sync: { ...idleSync(), info },
