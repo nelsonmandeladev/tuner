@@ -2,6 +2,7 @@ export * from "./accounts";
 export { insertRows } from "./insert";
 export * from "./library";
 export * from "./live";
+export * from "./maintenance";
 export * from "./vod";
 export { migrate } from "./migrate";
 export { accountMigrations, appMigrations } from "./migrations";

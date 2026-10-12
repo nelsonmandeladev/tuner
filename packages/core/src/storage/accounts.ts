@@ -117,6 +117,26 @@ export async function updateAccountInfo(
   );
 }
 
+/** What the user can edit in Settings → Accounts (the password lives in the SecretStore). */
+export interface AccountDetails {
+  name: string;
+  server: string;
+  username: string;
+}
+
+export async function updateAccountDetails(
+  db: SqlAdapter,
+  id: string,
+  details: AccountDetails,
+): Promise<void> {
+  await db.execute("UPDATE accounts SET name = ?, server = ?, username = ? WHERE id = ?", [
+    details.name,
+    details.server,
+    details.username,
+    id,
+  ]);
+}
+
 export async function markAccountSynced(db: SqlAdapter, id: string, at: number): Promise<void> {
   await db.execute("UPDATE accounts SET last_sync_at = ? WHERE id = ?", [at, id]);
 }
