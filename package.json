@@ -7,6 +7,7 @@
     "dev:web": "pnpm --filter @tuner/desktop dev",
     "build": "pnpm --filter @tuner/desktop build",
     "tauri": "pnpm --filter @tuner/desktop tauri",
+    "pack:msix": "node scripts/pack-msix.mjs",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint . && prettier --check . && pnpm typecheck",

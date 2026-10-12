@@ -11,3 +11,15 @@ dist-ssr/
 *.log
 .vite/
 apps/desktop/src-tauri/gen/schemas/
+
+# MSIX packaging (docs/RELEASE.md): never commit certificates, keys or packages
+*.pfx
+*.p12
+*.cer
+*.msix
+*.msixbundle
+*.appx
+AppX/
+
+# Development certificate
+devcert.pfx
