@@ -40,6 +40,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["lib/**/*"]
+    "resources": {
+      "lib/libmpv-2.dll": "lib/libmpv-2.dll",
+      "lib/libmpv-wrapper.dll": "lib/libmpv-wrapper.dll",
+      "lib/vcruntime140.dll": "vcruntime140.dll"
+    }
   }
 }

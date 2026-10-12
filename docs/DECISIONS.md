@@ -87,6 +87,7 @@ Write the outcome here (which option, which OS, measured first-frame and zap tim
 - Live resize was checked between sizes, not frame by frame during a drag; a one-frame lag of the margins during fast drags is possible.
 - The plugin `trace!`-logs `loadfile` arguments (stream URLs). It is silent because no `log` backend is installed. If one is added later (e.g. `tauri-plugin-log`), filter out `tauri_plugin_libmpv` below `info`.
 - The plugin is single-maintainer, and its JS package pins `@tauri-apps/api` (overridden in `pnpm-workspace.yaml`).
+- **Visual C++ runtime (found in M6, 2026-10-12, Windows Sandbox):** `libmpv-wrapper.dll` imports `VCRUNTIME140.dll`, which a clean Windows does not have, so nothing played after a fresh install (dev PCs have it from Visual Studio). **User decision 2026-10-12: option A**, app-local deployment: the installers ship Microsoft's `vcruntime140.dll` (from the Visual Studio redist folder) beside `tuner.exe`, about 120 KB. Windows Update does not service that copy: refresh it from the redist folder when building a release. Rejected: bundling the VC++ redistributable (+25 MB, admin prompt); a wrapper built with the static CRT (not under our control, may come later). A player that cannot start now says so instead of loading forever.
 
 **Not an option:** HTML `<video>` + hls.js/mpegts.js as the main player. It fails on AC3/E-AC3/HEVC, which is the reason this project exists.
 

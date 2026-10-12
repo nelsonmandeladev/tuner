@@ -12,7 +12,7 @@ How to build, package, sign, install, test and remove Tuner on Windows, and how 
 
 ## Before a release
 
-1. The libmpv DLLs are in `apps/desktop/src-tauri/lib/` (CLAUDE.md, "libmpv binaries").
+1. The libmpv DLLs and `vcruntime140.dll` are in `apps/desktop/src-tauri/lib/` (CLAUDE.md, "libmpv binaries"). Take `vcruntime140.dll` from the newest Visual Studio redist folder for each release: Windows Update does not service an app-local copy.
 2. Bump the version in `apps/desktop/src-tauri/tauri.conf.json` (and `Cargo.toml`, `apps/desktop/package.json`). The MSIX version follows it as `x.y.z.0` (`pack:msix` writes it into the manifest). Windows only updates an installed MSIX to a higher version.
 3. `pnpm lint`, `pnpm test`, `cargo test` in `apps/desktop/src-tauri`.
 4. Check free space: a release build needs about 4 GB in `target/`.
@@ -23,7 +23,7 @@ How to build, package, sign, install, test and remove Tuner on Windows, and how 
 CARGO_BUILD_JOBS=4 pnpm tauri build
 ```
 
-Output: `apps/desktop/src-tauri/target/release/bundle/nsis/` and `…/bundle/msi/`. The NSIS installer installs for the current user (no administrator rights) and downloads the WebView2 runtime if it is missing (`webviewInstallMode` default, about 0 MB added). Files go in the install folder as `tuner.exe` and `lib\libmpv-2.dll`, `lib\libmpv-wrapper.dll`.
+Output: `apps/desktop/src-tauri/target/release/bundle/nsis/` and `…/bundle/msi/`. The NSIS installer installs for the current user (no administrator rights) and downloads the WebView2 runtime if it is missing (`webviewInstallMode` default, about 0 MB added). Files go in the install folder as `tuner.exe`, `vcruntime140.dll` (the Visual C++ runtime `libmpv-wrapper.dll` needs; a clean Windows has none) and `lib\libmpv-2.dll`, `lib\libmpv-wrapper.dll`.
 
 ## Build the MSIX
 
@@ -43,7 +43,7 @@ What it does (`scripts/pack-msix.mjs`):
 
 1. Sets the manifest's `Identity Version` from `tauri.conf.json`.
 2. Runs `pnpm tauri build` (so NSIS and MSI are rebuilt too). `--skip-build` packs the last build again.
-3. Stages `target/msix-stage/`: `tuner.exe` and `lib/` with the two DLLs, the layout the NSIS install has. The libmpv plugin loads `libmpv-wrapper.dll` from the exe's folder or its `lib/` folder.
+3. Stages `target/msix-stage/`: `tuner.exe`, `vcruntime140.dll` and `lib/` with the two libmpv DLLs, the layout the NSIS install has. The libmpv plugin loads `libmpv-wrapper.dll` from the exe's folder or its `lib/` folder.
 4. Creates `devcert.pfx` at the repo root on first use (`winapp cert generate --manifest …`; publisher from the manifest) and runs `winapp pack <stage> --manifest apps/desktop/msix/Package.appxmanifest --cert devcert.pfx`.
 
 Output: `apps/desktop/src-tauri/target/release/bundle/msix/Tuner_<version>.0_x64.msix`.
@@ -128,6 +128,8 @@ winapp drives a Windows Sandbox (Windows 11 24H2 or later, virtualisation on). W
 ```bash
 dism.exe /Online /Enable-Feature /FeatureName:Containers-DisposableClientVM /All /NoRestart
 ```
+
+winapp keeps its Sandbox state under `%USERPROFILE%\.winapp`, and Windows Sandbox refused to share that folder on the development PC (`E_ACCESSDENIED` while preparing the guest agent). Point it elsewhere for every winapp call, e.g. `$env:WINAPP_TARGET_STATE_ROOT = "$env:TEMP\winapp-state"`.
 
 Then, without touching the host's certificates or apps:
 

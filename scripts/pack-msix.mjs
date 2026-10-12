@@ -10,9 +10,10 @@
  * 1. Keeps the manifest version equal to tauri.conf.json's (x.y.z → x.y.z.0):
  *    Windows only updates an installed package to a higher version.
  * 2. `pnpm tauri build` (also writes the NSIS and MSI installers).
- * 3. Stages the files in the layout the NSIS install uses: tuner.exe, and the
- *    libmpv DLLs in lib/ beside it (tauri-plugin-libmpv looks for
- *    libmpv-wrapper.dll next to the exe and in lib/).
+ * 3. Stages the files in the layout the NSIS install uses: tuner.exe and
+ *    vcruntime140.dll, and the libmpv DLLs in lib/ beside them
+ *    (tauri-plugin-libmpv looks for libmpv-wrapper.dll next to the exe and
+ *    in lib/; the wrapper's C runtime must sit next to the exe).
  * 4. `winapp pack` with apps/desktop/msix/Package.appxmanifest. The dev
  *    certificate is created on first use (publisher read from the manifest).
  *    Its password, "password", is public: local and Sandbox testing only.
@@ -76,9 +77,12 @@ if (!args.has("--skip-build")) run("pnpm", ["tauri", "build"], { cwd: ROOT });
 rmSync(STAGE, { recursive: true, force: true });
 mkdirSync(join(STAGE, "lib"), { recursive: true });
 copyFileSync(join(TAURI, "target", "release", "tuner.exe"), join(STAGE, "tuner.exe"));
-for (const dll of readdirSync(join(TAURI, "lib")).filter((f) => f.endsWith(".dll"))) {
+for (const dll of ["libmpv-2.dll", "libmpv-wrapper.dll"]) {
   copyFileSync(join(TAURI, "lib", dll), join(STAGE, "lib", dll));
 }
+// The Visual C++ runtime libmpv-wrapper.dll needs, beside the exe where Windows
+// looks for it (app-local deployment; a clean Windows has none, seen in M6).
+copyFileSync(join(TAURI, "lib", "vcruntime140.dll"), join(STAGE, "vcruntime140.dll"));
 
 // 4. Pack (and sign with the dev certificate unless it is for the Store).
 mkdirSync(OUT_DIR, { recursive: true });
