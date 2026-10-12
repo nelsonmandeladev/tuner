@@ -1,14 +1,12 @@
 import { motion } from "motion/react";
 import { Outlet, useLocation } from "react-router";
 import { Sidebar } from "../components/Sidebar";
-import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 
 /** Screen change: 180 ms fade with an 8 px rise (DESIGN.md "Motion"). */
 const screenTransition = { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] } as const;
 
 export function AppShell() {
   const { pathname } = useLocation();
-  useGlobalShortcuts();
 
   return (
     <div className="flex h-full text-text">

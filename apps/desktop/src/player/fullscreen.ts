@@ -33,6 +33,15 @@ export async function enterPlayer(navigate: NavigateFunction, loading?: Promise<
 }
 
 /**
+ * Leaves the player without choosing where to go (the caller navigates):
+ * saves the resume point, leaves full screen.
+ */
+export async function exitPlayer() {
+  if (useTuner.getState().mode === "vod") await flushResume();
+  await setFullscreen(false);
+}
+
+/**
  * Back from the player (Esc, the back button): to Live TV for channels and
  * catch-up, to the detail page for a movie or an episode. Leaves full screen too.
  */

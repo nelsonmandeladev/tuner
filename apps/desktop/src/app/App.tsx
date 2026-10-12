@@ -10,7 +10,7 @@ import { LiveTV } from "../screens/LiveTV";
 import { Movies, Series } from "../screens/Catalog";
 import { MovieDetail } from "../screens/details/MovieDetail";
 import { SeriesDetail } from "../screens/details/SeriesDetail";
-import { Search } from "../screens/Search";
+import { GlobalSearch } from "../screens/search/GlobalSearch";
 import { Settings } from "../screens/Settings";
 import { AppShell } from "./AppShell";
 import { RequireAccount } from "./RequireAccount";
@@ -26,6 +26,7 @@ export function App() {
       <Backdrop />
       <BrowserRouter>
         <PlaybackScope />
+        <GlobalSearch />
         {DevAutorun && "__TAURI_INTERNALS__" in window && (
           <Suspense>
             <DevAutorun />
@@ -41,7 +42,6 @@ export function App() {
               <Route path="movies/:id" element={<MovieDetail />} />
               <Route path="series" element={<Series />} />
               <Route path="series/:id" element={<SeriesDetail />} />
-              <Route path="search" element={<Search />} />
               <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="watch" element={<Player />} />

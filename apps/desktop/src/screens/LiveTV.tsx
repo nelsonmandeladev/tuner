@@ -7,7 +7,14 @@ import { EmptyState } from "../components/EmptyState";
 import { Screen } from "../components/Screen";
 import { Toast } from "../components/Toast";
 import { useNow, wantEpg } from "../data/epg";
-import { loadLive, selectCategory, selectChannel, setHidden, useLive } from "../data/live";
+import {
+  clearReveal,
+  loadLive,
+  selectCategory,
+  selectChannel,
+  setHidden,
+  useLive,
+} from "../data/live";
 import { useSession } from "../data/session";
 import { enterPlayer } from "../player/fullscreen";
 import {
@@ -72,18 +79,23 @@ export function LiveTV() {
   );
 
   // First visit: play the remembered (or first) channel. Coming back from the
-  // player: show where zapping ended.
+  // player: show where zapping ended. Coming from search: play what was chosen.
+  const reveal = useLive((s) => s.reveal);
   useEffect(() => {
     if (status !== "ready") return;
     const tuned = useTuner.getState().channelId;
     const live = useLive.getState();
-    if (tuned !== null && live.channels.has(tuned) && useTuner.getState().mode === "live") {
+    if (live.reveal !== null) {
+      const id = live.reveal;
+      clearReveal();
+      pick(id);
+    } else if (tuned !== null && live.channels.has(tuned) && useTuner.getState().mode === "live") {
       if (tuned !== live.selectedId) selectChannel(tuned);
       tune(tuned, { list: live.list });
     } else if (live.selectedId !== null) {
       pick(live.selectedId);
     }
-  }, [status, pick]);
+  }, [status, pick, reveal]);
 
   // Keep the selected row in view (keyboard, number entry, return from the player).
   useEffect(() => {

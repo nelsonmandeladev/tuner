@@ -22,7 +22,6 @@ import {
   zap,
 } from "../player/tuner";
 import { VideoSurface } from "../player/VideoSurface";
-import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
 import { NumberEntry } from "./live/NumberEntry";
 import { UpNextCard } from "./player/UpNextCard";
 import { VodFooter } from "./player/VodFooter";
@@ -60,7 +59,6 @@ export function Player() {
   const [stats, setStats] = useState(false);
   const [menu, setMenu] = useState<PlayerMenu>(null);
   const channel = channelOf(channelId);
-  useGlobalShortcuts();
 
   const pinned = guide || menu !== null || status === "error" || upNext !== null;
   const { visible, wake } = useAutoHide(pinned);

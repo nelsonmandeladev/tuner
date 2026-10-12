@@ -44,6 +44,8 @@ export interface LiveState {
   /** The channels of the current category after the filter: what the list shows and zapping walks. */
   list: number[];
   selectedId: number | null;
+  /** A channel chosen elsewhere (search) for Live TV to tune when it opens. */
+  reveal: number | null;
 }
 
 interface Index {
@@ -78,6 +80,7 @@ export const useLive = create<LiveState>(() => ({
   filter: "",
   list: [],
   selectedId: null,
+  reveal: null,
 }));
 
 const set = useLive.setState;
@@ -218,6 +221,24 @@ export function setFilter(filter: string) {
 /** Selects a channel in the list (the preview follows it, see LiveTV). */
 export function selectChannel(id: number) {
   set({ selectedId: id });
+}
+
+/**
+ * Selects a channel chosen outside Live TV (search): keeps the category if it
+ * lists the channel, else switches to All channels, and asks Live TV to tune
+ * it (`reveal`). Returns the list it is in, for zapping.
+ */
+export function revealChannel(id: number): number[] {
+  if (!get().channels.has(id)) return [];
+  if (!get().list.includes(id)) refreshList({ categoryId: ALL_CHANNELS, filter: "" });
+  if (!get().list.includes(id)) refreshList({ filter: "" });
+  set({ selectedId: id, reveal: id });
+  return get().list;
+}
+
+/** Live TV took the revealed channel. */
+export function clearReveal() {
+  set({ reveal: null });
 }
 
 /** Remembers the last channel watched, for the next visit. */

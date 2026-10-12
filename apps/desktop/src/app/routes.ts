@@ -14,14 +14,18 @@ export interface NavRoute {
   icon: IconSvgElement;
 }
 
-/** The five destinations in the sidebar, in order (SPEC "Features"). */
+/**
+ * The sidebar's destinations, in order (SPEC "Features"). Search, the fifth,
+ * is an overlay over any screen rather than a route (see `searchNav`).
+ */
 export const mainRoutes = [
   { path: "/", label: "Home", icon: Home01Icon },
   { path: "/live", label: "Live TV", icon: Tv01Icon },
   { path: "/movies", label: "Movies", icon: Film01Icon },
   { path: "/series", label: "Series", icon: PlayListIcon },
-  { path: "/search", label: "Search", icon: Search01Icon },
 ] as const satisfies readonly NavRoute[];
+
+export const searchNav = { label: "Search", icon: Search01Icon } as const;
 
 export const settingsRoute = {
   path: "/settings",
