@@ -100,6 +100,7 @@ The app has five destinations in a left sidebar: Home, Live TV, Movies, Series, 
 - **Content:** hidden categories, auto-play next episode.
 - **Data:** refresh interval, clear cache, clear history.
 - **Appearance:** dark (default) or light.
+- **About:** version, licence and open-source notices, privacy policy, where to report a problem (pages on GitHub, opened in the browser).
 
 ## Player
 

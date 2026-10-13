@@ -28,6 +28,10 @@
           "url": "https://*:*"
         }
       ]
+    },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://github.com/nelsonmandeladev/tuner*" }]
     }
   ]
 }

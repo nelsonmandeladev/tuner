@@ -1,5 +1,6 @@
 import { SegmentedControl } from "../components/SegmentedControl";
 import { updateSettings, useSettings, type Theme } from "../data/settings";
+import { AboutSection } from "./settings/AboutSection";
 import { AccountsSection } from "./settings/AccountsSection";
 import { ContentSection } from "./settings/ContentSection";
 import { DataSection } from "./settings/DataSection";
@@ -20,6 +21,7 @@ export function Settings() {
         <ContentSection />
         <DataSection />
         <AppearanceSection />
+        <AboutSection />
       </div>
     </div>
   );

@@ -354,7 +354,7 @@ export async function runM6Suite(plan: M6Plan, navigate: NavigateFunction, log: 
       const checks: [string, boolean][] = [
         [
           `sections ${sections.map((s) => (s as HTMLElement).dataset.settings).join("/")}`,
-          sections.length === 5,
+          sections.length === 6,
         ],
         [`column ${round(box(column)?.width ?? 0)} px`, near(box(column)?.width, 800)],
         [

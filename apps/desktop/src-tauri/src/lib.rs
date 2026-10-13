@@ -12,6 +12,7 @@ pub fn run() {
     #[cfg(debug_assertions)]
     debug_stream::mark_process_start();
     let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_libmpv::init())

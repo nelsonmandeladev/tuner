@@ -23,7 +23,7 @@ The GNU Lesser General Public License 2.1 is at <https://www.gnu.org/licenses/ol
 | Package | Licence |
 | --- | --- |
 | React, React DOM, React Router, Zustand, TanStack Virtual, Motion | MIT |
-| `@tauri-apps/api`, `@tauri-apps/plugin-http`, `@tauri-apps/plugin-sql` | MIT or Apache-2.0 |
+| `@tauri-apps/api`, `@tauri-apps/plugin-http`, `@tauri-apps/plugin-opener`, `@tauri-apps/plugin-sql` | MIT or Apache-2.0 |
 | `tauri-plugin-libmpv-api` | MPL-2.0 |
 | [Hugeicons](https://hugeicons.com) free icons (`@hugeicons/react`, `@hugeicons/core-free-icons`) | MIT |
 | [MiniSearch](https://github.com/lucaong/minisearch) (in `@tuner/core`) | MIT |
