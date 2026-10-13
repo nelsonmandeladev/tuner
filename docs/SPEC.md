@@ -219,7 +219,7 @@ Build order follows the risk: prove playback first, then data, then the screens.
 
 **Open questions**
 
-- [ ] App name and icon.
+- [x] App name and icon. (Tuner, final 2026-10-13.)
 - [ ] Live preview in the Live TV screen: auto-play muted, or only on click?
 - [ ] macOS and Windows both in v1, or one first? Which do we watch on most?
 - [ ] Does our provider support catch-up (`tv_archive`)? If not, catch-up moves to later.

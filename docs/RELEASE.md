@@ -12,10 +12,21 @@ How to build, package, sign, install, test and remove Tuner on Windows, and how 
 
 ## Before a release
 
-1. The libmpv DLLs and `vcruntime140.dll` are in `apps/desktop/src-tauri/lib/` (CLAUDE.md, "libmpv binaries"). Take `vcruntime140.dll` from the newest Visual Studio redist folder for each release: Windows Update does not service an app-local copy.
+1. The libmpv DLLs and `vcruntime140.dll` are in `apps/desktop/src-tauri/lib/` (`pnpm fetch:libmpv`; CLAUDE.md, "libmpv binaries"). Take `vcruntime140.dll` from the newest Visual Studio redist folder for each release (`pnpm fetch:libmpv --force`): Windows Update does not service an app-local copy. The release workflow always fetches fresh.
 2. Bump the version in `apps/desktop/src-tauri/tauri.conf.json` (and `Cargo.toml`, `apps/desktop/package.json`). The MSIX version follows it as `x.y.z.0` (`pack:msix` writes it into the manifest). Windows only updates an installed MSIX to a higher version.
 3. `pnpm lint`, `pnpm test`, `cargo test` in `apps/desktop/src-tauri`.
 4. Check free space: a release build needs about 4 GB in `target/`.
+
+## Publish a GitHub release
+
+Users download the NSIS installer from the repo's Releases page (README, "Install").
+
+1. Do "Before a release" steps 2 and 3, commit and push to `main`.
+2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`.
+3. `.github/workflows/release.yml` runs on GitHub's Windows runner: it checks the tag against `tauri.conf.json`, runs `pnpm test`, `pnpm fetch:libmpv` and `pnpm tauri build --bundles nsis`, then makes a **draft** release with `Tuner_<version>_x64-setup.exe`, its `.sha256` file, install notes and the changes since the last tag.
+4. Download the installer from the draft, try it (a Sandbox run as in "Testing a clean install" is the best check), edit the notes, then **Publish release**.
+
+The installer is unsigned, so SmartScreen shows "Windows protected your PC" until enough people have installed it; the release notes and README explain **More info → Run anyway**. Free code signing for open-source projects is available from the [SignPath Foundation](https://signpath.org) once the repo is public; it would sign in the release workflow.
 
 ## Build the NSIS and MSI installers
 

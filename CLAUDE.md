@@ -2,7 +2,9 @@
 
 Desktop app (Tauri 2 + React + libmpv) that signs in to any **Xtream Codes** IPTV subscription and makes live TV, movies and series fast to browse and reliable to play. It is a player, not a content provider.
 
-"Tuner" is a working name. Keep the product name in one place (`tauri.conf.json` `productName` + `apps/desktop/src/app/brand.ts`) so renaming is a one-line change.
+"Tuner" and its icon are final (2026-10-13). The product name still lives in one place (`tauri.conf.json` `productName` + `apps/desktop/src/app/brand.ts`).
+
+Free and open source under MIT (`LICENSE`), public at <https://github.com/nelsonmandeladev/tuner>. Everything committed is public. `THIRD_PARTY_NOTICES.md` lists bundled and linked software: update it when a dependency brings a new licence or the libmpv build changes. `PRIVACY.md` must stay true: change it with any feature that sends data anywhere new.
 
 ## Read these before writing code
 
@@ -23,6 +25,7 @@ Desktop app (Tauri 2 + React + libmpv) that signs in to any **Xtream Codes** IPT
 - **Core:** `packages/core`, plain TypeScript. Xtream client, models, sync, search. No React, no Tauri imports.
 - **Storage:** SQLite through `tauri-plugin-sql`. Passwords in the OS keychain through the Rust `keyring` crate.
 - **Network:** `tauri-plugin-http` (bypasses webview CORS; providers are often plain `http://`).
+- **Links:** `tauri-plugin-opener`, scoped in `capabilities/default.json` to the project's GitHub pages (Settings → About).
 - **Player:** libmpv. M1 decides how it is embedded (see `docs/DECISIONS.md` D2).
 - **Search:** MiniSearch index in a Web Worker, built after each sync.
 - **Packaging:** Tauri's NSIS and MSI, and MSIX through the winapp CLI (D11, `docs/RELEASE.md`).
@@ -45,12 +48,14 @@ Run from the repo root. Keep this list current.
 | Command | What it does |
 | --- | --- |
 | `pnpm install` | Install all workspace packages |
+| `pnpm fetch:libmpv` | Put the pinned libmpv, libmpv-wrapper (SHA-256 checked) and a Microsoft-signed `vcruntime140.dll` from Visual Studio in `apps/desktop/src-tauri/lib/`. `--force` fetches again |
 | `pnpm dev` | Run the desktop app (`tauri dev`: Vite on :1420 + Rust) |
 | `pnpm dev:web` | Vite only, in a browser (no Tauri APIs, no mpv) |
 | `pnpm test` | Vitest in every package that has tests (`packages/core`) |
 | `pnpm lint` | ESLint, Prettier check, then `tsc --noEmit` in every package |
 | `pnpm format` | Prettier write (Tailwind class sorting included). Markdown is not formatted |
 | `pnpm tauri build` | Release build + Windows installers (NSIS `.exe`, MSI) in `apps/desktop/src-tauri/target/release/bundle/` |
+| `git tag v<version> && git push origin v<version>` | Release: `.github/workflows/release.yml` builds the NSIS installer on GitHub and attaches it with its SHA-256 to a draft release to review and publish (`docs/RELEASE.md`). The tag must match `tauri.conf.json` |
 | `pnpm pack:msix` | Release build, then the MSIX through winapp (D11) in `apps/desktop/src-tauri/target/release/bundle/msix/`, signed with the local `devcert.pfx` (created on first use, gitignored). `--skip-build` packs the last build; `--store` makes it unsigned for the Store. Steps, signing, Store and Sandbox in `docs/RELEASE.md` |
 | `winapp manifest update-assets apps/desktop/app-icon.svg --manifest apps/desktop/msix/Package.appxmanifest` | Regenerate the MSIX assets from the icon (run from `apps/desktop/msix`) |
 | `pnpm tauri icon <file>` | Regenerate app icons from a 1024² SVG/PNG (`apps/desktop/app-icon.svg`) |
@@ -62,7 +67,7 @@ Run from the repo root. Keep this list current.
 | `node scripts/record-fixtures.mjs` | Re-record the Xtream fixtures in `packages/core/test/fixtures` from `.env.local` (credentials, host and content names are stripped) |
 | `TUNER_M1_SUITE="live=<id>,hevc=<id>,ac3=<id>.<ext>,eac3=<id>.<ext>" pnpm dev` | Dev build that opens `/debug/player` and runs the M1 playback suite by itself; results print as `[player] RESULT …` lines. Ids come from your own account (never commit them) |
 
-**libmpv binaries** (needed before `pnpm dev` or `pnpm tauri build`; `src-tauri/lib/` is gitignored and bundled as resources): put `libmpv-2.dll` (from `mpv-dev-lgpl-x86_64-<date>.7z`, [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild/releases), non-`v3`) and `libmpv-wrapper.dll` (from `libmpv-wrapper-windows-x86_64.zip`, [nini22P/libmpv-wrapper](https://github.com/nini22P/libmpv-wrapper/releases)) in `apps/desktop/src-tauri/lib/`. Check each archive against its release's `sha256.txt`. Also copy `vcruntime140.dll` (Microsoft-signed) from Visual Studio's `VC\Redist\MSVC\<version>\x64\Microsoft.VC143.CRT\` into the same folder: `libmpv-wrapper.dll` needs it and a clean Windows does not have it; the installers put it beside `tuner.exe` (app-local deployment, decided 2026-10-12). M1 used build `20261011-git-d94d095814` and wrapper `v0.1.1`. The player debug screen opens with Ctrl+Shift+D in dev builds.
+**libmpv binaries** (needed before `pnpm dev`, `pnpm tauri build` or `cargo test`; `src-tauri/lib/` is gitignored and bundled as resources): `pnpm fetch:libmpv` does all of this. By hand: put `libmpv-2.dll` (from `mpv-dev-lgpl-x86_64-<date>.7z`, [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild/releases), non-`v3`) and `libmpv-wrapper.dll` (from `libmpv-wrapper-windows-x86_64.zip`, [nini22P/libmpv-wrapper](https://github.com/nini22P/libmpv-wrapper/releases)) in `apps/desktop/src-tauri/lib/`. Check each archive against its release's `sha256.txt`. Also copy `vcruntime140.dll` (Microsoft-signed) from Visual Studio's `VC\Redist\MSVC\<version>\x64\Microsoft.VC143.CRT\` into the same folder: `libmpv-wrapper.dll` needs it and a clean Windows does not have it; the installers put it beside `tuner.exe` (app-local deployment, decided 2026-10-12). M1 used build `20261011-git-d94d095814` and wrapper `v0.1.1`; to move to another, change `RELEASES` in `scripts/fetch-libmpv.mjs` (URLs and SHA-256) and the versions in `THIRD_PARTY_NOTICES.md` together. The player debug screen opens with Ctrl+Shift+D in dev builds.
 
 Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter @tuner/desktop add …` or `pnpm --filter @tuner/core add …`. TypeScript is pinned to `~6.0` because typescript-eslint does not support 7.x yet.
 
@@ -84,7 +89,7 @@ Scaffolded with `create-tauri-app` (react-ts). Add packages with `pnpm --filter 
 ## Open questions (ask the user, don't guess)
 
 - ~~Primary OS for M1 and v1 first release~~ **Answered 2026-10-11: Windows.** macOS later.
-- Final app name and icon.
+- ~~Final app name and icon~~ **Answered 2026-10-13:** Tuner and the current icon are final.
 - ~~Live TV preview behaviour~~ **Answered 2026-10-11: auto-play muted on selection.**
 - ~~Does the provider support catch-up (`tv_archive`)?~~ **Yes, checked in M3 (2026-10-11):** 400 channels have it (2–3 days), the `/timeshift/` path form plays (start time on the server clock). Implemented in M3.
 - Auto-update in v1 or manual installs? Default until answered: manual.
