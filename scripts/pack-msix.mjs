@@ -83,6 +83,9 @@ for (const dll of ["libmpv-2.dll", "libmpv-wrapper.dll"]) {
 // The Visual C++ runtime libmpv-wrapper.dll needs, beside the exe where Windows
 // looks for it (app-local deployment; a clean Windows has none, seen in M6).
 copyFileSync(join(TAURI, "lib", "vcruntime140.dll"), join(STAGE, "vcruntime140.dll"));
+// The licence and the notices the LGPL libraries need, as in tauri.conf.json.
+copyFileSync(join(ROOT, "LICENSE"), join(STAGE, "LICENSE.txt"));
+copyFileSync(join(ROOT, "THIRD_PARTY_NOTICES.md"), join(STAGE, "THIRD_PARTY_NOTICES.md"));
 
 // 4. Pack (and sign with the dev certificate unless it is for the Store).
 mkdirSync(OUT_DIR, { recursive: true });

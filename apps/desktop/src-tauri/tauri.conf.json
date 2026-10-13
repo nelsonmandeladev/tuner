@@ -47,7 +47,9 @@
     "resources": {
       "lib/libmpv-2.dll": "lib/libmpv-2.dll",
       "lib/libmpv-wrapper.dll": "lib/libmpv-wrapper.dll",
-      "lib/vcruntime140.dll": "vcruntime140.dll"
+      "lib/vcruntime140.dll": "vcruntime140.dll",
+      "../../../LICENSE": "LICENSE.txt",
+      "../../../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"
     }
   }
 }
