@@ -8,6 +8,7 @@
 
 ## Checklist
 
+- [ ] `CHANGELOG.md` has a line under **Unreleased** (if users would notice the change).
 - [ ] `pnpm lint` and `pnpm test` pass (and `cargo test` for Rust changes).
 - [ ] UI changes use design tokens and follow `docs/DESIGN.md`; screenshots attached.
 - [ ] No server addresses, credentials, stream URLs or channel names anywhere (code, fixtures, logs, screenshots).

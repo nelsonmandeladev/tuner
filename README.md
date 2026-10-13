@@ -10,7 +10,7 @@
 [![Latest release](https://img.shields.io/github/v/release/nelsonmandeladev/tuner)](https://github.com/nelsonmandeladev/tuner/releases/latest)
 [![MIT licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
-[Download for Windows](https://github.com/nelsonmandeladev/tuner/releases/latest) · [Report a problem](https://github.com/nelsonmandeladev/tuner/issues/new/choose) · [Contribute](CONTRIBUTING.md)
+[Download for Windows](https://github.com/nelsonmandeladev/tuner/releases/latest) · [What's new](CHANGELOG.md) · [Report a problem](https://github.com/nelsonmandeladev/tuner/issues/new/choose) · [Contribute](CONTRIBUTING.md)
 
 </div>
 

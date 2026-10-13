@@ -21,6 +21,7 @@ You need Windows 10 or 11, [Node.js LTS](https://nodejs.org), [pnpm](https://pnp
 
 - `pnpm test` and `pnpm lint` pass. `pnpm format` fixes formatting.
 - For Rust changes, `cargo test` in `apps/desktop/src-tauri` passes.
+- Add a line under **Unreleased** in [CHANGELOG.md](CHANGELOG.md) for anything a user would notice.
 - One concern per pull request, with [conventional commit](https://www.conventionalcommits.org) messages (`fix(core): …`, `feat(desktop): …`).
 - For UI changes, follow `docs/DESIGN.md`: design tokens only (no hard-coded colours or font sizes), and attach a screenshot without personal content.
 - For bigger changes or new dependencies, open an issue first. `docs/DECISIONS.md` explains the stack choices.

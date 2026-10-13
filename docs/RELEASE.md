@@ -21,9 +21,9 @@ How to build, package, sign, install, test and remove Tuner on Windows, and how 
 
 Users download the NSIS installer from the repo's Releases page (README, "Install").
 
-1. Do "Before a release" steps 2 and 3, commit and push to `main`.
+1. Do "Before a release" steps 2 and 3. In `CHANGELOG.md`, rename **Unreleased** to `## [<version>] - <YYYY-MM-DD>`, add an empty **Unreleased** above it and the compare links at the bottom. Commit and push to `main`.
 2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`.
-3. `.github/workflows/release.yml` runs on GitHub's Windows runner: it checks the tag against `tauri.conf.json`, runs `pnpm test`, `pnpm fetch:libmpv` and `pnpm tauri build --bundles nsis`, then makes a **draft** release with `Tuner_<version>_x64-setup.exe`, its `.sha256` file, install notes and the changes since the last tag.
+3. `.github/workflows/release.yml` runs on GitHub's Windows runner: it checks the tag against `tauri.conf.json`, runs `pnpm test`, `pnpm fetch:libmpv` and `pnpm tauri build --bundles nsis`, then makes a **draft** release with `Tuner_<version>_x64-setup.exe`, its `.sha256` file, install notes and the version's `CHANGELOG.md` section. It stops before building if that section is missing or undated.
 4. Download the installer from the draft, try it (a Sandbox run as in "Testing a clean install" is the best check), edit the notes, then **Publish release**.
 
 The installer is unsigned, so SmartScreen shows "Windows protected your PC" until enough people have installed it; the release notes and README explain **More info → Run anyway**. Free code signing for open-source projects is available from the [SignPath Foundation](https://signpath.org) once the repo is public; it would sign in the release workflow.
