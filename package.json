@@ -21,6 +21,13 @@
     }
   },
   "packageManager": "pnpm@12.11.2",
+  "license": "MIT",
+  "author": "Sonfack Nelson Mandela",
+  "homepage": "https://github.com/nelsonmandeladev/tuner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nelsonmandeladev/tuner.git"
+  },
   "type": "module",
   "private": true,
   "devDependencies": {

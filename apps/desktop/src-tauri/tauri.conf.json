@@ -32,6 +32,10 @@
   },
   "bundle": {
     "active": true,
+    "copyright": "Copyright (c) 2026 Sonfack Nelson Mandela",
+    "license": "MIT",
+    "licenseFile": "../../../LICENSE",
+    "homepage": "https://github.com/nelsonmandeladev/tuner",
     "targets": "all",
     "icon": [
       "icons/32x32.png",

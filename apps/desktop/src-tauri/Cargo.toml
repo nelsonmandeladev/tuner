@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "IPTV player for your own Xtream Codes subscription"
 authors = ["MEASDEV"]
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/nelsonmandeladev/tuner"
+homepage = "https://github.com/nelsonmandeladev/tuner"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
