@@ -1,0 +1,27 @@
+name: Feature request
+description: An idea to make Tuner better
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tuner plays the user's own Xtream Codes subscription. Ideas that add, list or help find channels, playlists or providers are out of scope and will be closed.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is hard or missing today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How you would like it to work.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Other apps that do it well, sketches, links.
